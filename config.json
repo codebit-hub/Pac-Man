@@ -1,0 +1,6 @@
+{
+    "#": "Main configuration file for Pac-Man",
+    "highscore_filename": "highscores.json",
+    "lives": 3,
+    "seed": 42
+}
