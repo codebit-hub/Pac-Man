@@ -1,3 +1,6 @@
+# Custom files
+.install_stamp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
