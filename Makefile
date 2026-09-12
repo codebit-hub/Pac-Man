@@ -26,18 +26,15 @@ debug: $(VENV_STAMP)
 clean:
 	rm -rf __pycache__ src/__pycache__ 
 	rm -rf .mypy_cache $(VENV_STAMP)
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "__pycache__" -exec rm -rf {} + \
+		2>/dev/null || true
 
 fclean: clean
 	rm -rf $(VENV_DIR) $(VENV_STAMP)
 
 lint: $(VENV_STAMP)
 	./$(VENV_DIR)/bin/$(FLAKE8) .
-	./$(VENV_DIR)/bin/$(MYPY) . --warn-return-any \
-		--warn-unused-ignores \
-		--ignore-missing-imports \
-		--disallow-untyped-defs \
-		--check-untyped-defs
+	./$(VENV_DIR)/bin/$(MYPY) .
 
 lint-strict: $(VENV_STAMP)
 	./$(VENV_DIR)/bin/$(FLAKE8) .
