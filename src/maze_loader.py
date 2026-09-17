@@ -163,7 +163,7 @@ class MazeLoader:
     def _place_pacgums(self,seed: int, max_pacgums: int) -> None:
         """Randomly distributes set pacgums in empty corridors"""
 
-        # Find empty corridors
+        # Collecting empty corridors
         empty_corridors = []
         for y in range(len(self.grid)):
             for x in range(len(self.grid[y])):
@@ -182,17 +182,24 @@ class MazeLoader:
                   f"{len(empty_corridors)} spaces available. Clamping.")
 
         # Select random coords from empty spaces
+        # random.sample() selects unique elements from iter and return list
+        # iter=empty_corridors, amount_to_place=placeable pacgums
         chosen_spots = random.sample(empty_corridors, amount_to_place)
 
-        # Place pacgums
+        # Place pacgums into chosen spots
         for x, y in chosen_spots:
             self.grid[y][x] = 2
 
     def _calculate_spawn_point(self, grid_w: int, grid_h: int) -> None:
         """Find the nearest valid empty tile to the center of the maze."""
+
+        # Find immediate center
         center_x = grid_w // 2
         center_y = grid_h // 2
 
+        # Find the nearest to the center spawn point for pacman
+        # Center is empty from previous step.
+        # Add center to queue and make it visited
         queue = [(center_x, center_y)]
         visited = set([(center_x, center_y)])
 
@@ -201,8 +208,12 @@ class MazeLoader:
 
             # If we found an empty corridor or a pacgum tile
             if self.grid[cy][cx] in (1, 2, 3):
+                # spawn_point is initalized at __init__()
                 self.spawn_point = (cx, cy)
                 # Clear any pacgum at the spawn point
+                # In center of grid, pellets rulled out,
+                # we check only for pacgums and empty them
+                # to place there pacman
                 if self.grid[cy][cx] == 2:
                     self.grid[cy][cx] = 1
                 return
