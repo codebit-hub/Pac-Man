@@ -8,6 +8,7 @@ class MazeLoader:
     def __init__(self) -> None:
         """Init the loader"""
 
+        # Init empty grid and set default pacman spawn point
         self.grid: list[list[int]] = []
         self.spawn_point: tuple[int, int] = (1, 1)
 
@@ -16,12 +17,14 @@ class MazeLoader:
     ) -> bool:
         """Generates maze from external package"""
 
-        # Attempt import with fallback
+        # Attempt import mazegenerator with installation fallback
         try:
             from mazegenerator import MazeGenerator
 
         except ImportError:
-            print("Warning: 'mazegenerator' package is not installed.")
+            print("Warning: 'mazegenerator' package is not installed. \n"
+                  "Install the required package with 'make install' and "
+                  "activate venv via 'source venv/bin/activate'.")
             return False
 
         # Load maze
@@ -36,7 +39,13 @@ class MazeLoader:
 
             # raw_maze receives all level bitmask rows lists
             raw_maze = maze_gen.maze
+            # print(f"raw_maze: \n {raw_maze}")
+            # [[9, 1, 1, 5, 1, 3, 9, 3, 9, 5, 5, 1, 3, 9, 1, 1, 3],
+            # [10, 10, 8, 5, 2, 8, 2, 8, 4, 1, 5, 2, 10, 10, 12, 4, 2],
+            # [12, 2, 10, 9, 4, 2, 8, 6, 9, 2, 9, 4, 6, 12, 5, 1, 6],
+            # [9, 6, 10, 8, 1, 6, 8, 1, 6, 10, 8, 5, 1, 1, 3, 12, 3],..
 
+            # Prepare grid base structure
             self._convert_to_pacman_grid(raw_maze, width, height)
             self._place_super_pacgums(width, height)
             self._place_pacgums(seed, pacgum_count)
@@ -52,12 +61,17 @@ class MazeLoader:
             self, raw_maze: list[list[int]], width: int, height: int
     ) -> None:
         """Convert a bitmask maze into a 2D tile grid.
-        Bitmasks: 1=North, 2=East, 4=South, 8=West.
-        Grid value: 0=Wall, 1=Empty, 2=Pacgum, 3=Super-Pacgum.
+        Bitmasks walls: 1=North, 2=East, 4=South, 8=West.
+        Grid values:
+        0=Wall, 1=Empty, 2=Pacgum, 3=Pellet, 4='42'.
         """
-        # [][][][][][]
-        # [][A][-][B][]
-        # [][][][][][]
+
+        # Upscaling algorithm:
+        # 2 cells A - B are covered by walls
+        # (2, 1) > (5, 3)
+        # [w][w][w][w][w]
+        # [w][A][-][B][w]
+        # [w][w][w][w][w]
 
         grid_w = (width * 2) + 1
         grid_h = (height * 2) + 1
@@ -68,37 +82,56 @@ class MazeLoader:
             row = [0] * grid_w
             self.grid.append(row)
 
-        # Build the grid
+        # grid list[list[int=0]]
+        # print(f"grid {self.grid}")
+
+        # Build the grid: sets empty and '42' cells
+        # Interpolate raw_maze into grid values
+        # BFS application
         for y in range(height):
             for x in range(width):
+                # Contains raw_maze value,e.g. 2,8,15
+                # We are starting from (0, 0).
+                # All cells=0, we carve East and South
+
                 cell = raw_maze[y][x]
 
-                # Calculate center in grid
                 gx = (x * 2) + 1
                 gy = (y * 2) + 1
 
-                # '42'
+                # [w][w][w]
+                # [w][c][w]
+                # [w][w][w]
+
+                # Distinguishing '42' cells: 15>>4
                 if cell == 15:
+                    # set the center of cell
                     self.grid[gy][gx] = 4
 
                     # Set out '42' blocks
+                    # If cell to East is wall, set it to '42' = 4
                     if x < width - 1 and raw_maze[y][x + 1] == 15:
                         self.grid[gy][gx + 1] = 4
+                    # If cell to South is wall, set it to 4
                     if y < height - 1 and raw_maze[y + 1][x] == 15:
                         self.grid[gy + 1][gx] = 4
 
-                    # Fill diagonal inner corners for visual solidity
+                    # Fill diagonal cell for squared block filling
+                    # [4][4]
+                    # [4][-]
                     if x < width - 1 and y < height - 1:
                         if (raw_maze[y][x + 1] == 15 and
                             raw_maze[y + 1][x] == 15):
                             self.grid[gy + 1][gx + 1] = 4
                     continue
 
-                # Empty the center of the grid
+                # Empty the center of the cell
                 self.grid[gy][gx] = 1
 
-                # If East is open, open West of next cell
-                # 9 (1001) & 2 (0010)
+                # If East isn't a wall, empty West of next cell
+                # 3 (0011) & 2 (0010): True
+                # 4 (0100) & 2 (0010): False
+                # not (False) is True
                 if not (cell & 2):
                     self.grid[gy][gx + 1] = 1
 
@@ -106,6 +139,8 @@ class MazeLoader:
                 # 9 (1001) & 4 (0100)
                 if not (cell & 4):
                     self.grid[gy + 1][gx] = 1
+        # print(f"grid {self.grid}")
+        # now, grid contains only walls=0, empty=1, '42'=4
 
     def _place_super_pacgums(self, width: int, height: int) -> None:
         """Places power pellets in 4 maze corners"""

@@ -32,7 +32,7 @@ class ConfigManager:
     def load(self, filepath: str) -> None:
         """Loads config from json with comment support"""
 
-        # Container for config lines
+        # Container for config raw lines
         raw_lines: list[str] = []
 
         # Parsing json with comments into raw_lines
