@@ -1,5 +1,4 @@
 import random
-from typing import Any
 
 
 class MazeLoader:
@@ -33,7 +32,7 @@ class MazeLoader:
                 size=(width, height),
                 perfect=False,
                 entry_cell=(1, 1),
-                exit_cell=(width - 1, height -1),
+                exit_cell=(width - 1, height - 1),
                 seed=seed
             )
 
@@ -120,8 +119,8 @@ class MazeLoader:
                     # [4][4]
                     # [4][-]
                     if x < width - 1 and y < height - 1:
-                        if (raw_maze[y][x + 1] == 15 and
-                            raw_maze[y + 1][x] == 15):
+                        if (raw_maze[y][x + 1] == 15
+                                and raw_maze[y + 1][x] == 15):
                             self.grid[gy + 1][gx + 1] = 4
                     continue
 
@@ -152,7 +151,7 @@ class MazeLoader:
             (1, 1),
             (grid_w - 2, 1),
             (1, grid_h - 2),
-            (grid_w - 2, grid_h -2)
+            (grid_w - 2, grid_h - 2)
         ]
 
         for cx, cy in corners:
@@ -160,7 +159,7 @@ class MazeLoader:
             if self.grid[cy][cx] == 1:
                 self.grid[cy][cx] = 3
 
-    def _place_pacgums(self,seed: int, max_pacgums: int) -> None:
+    def _place_pacgums(self, seed: int, max_pacgums: int) -> None:
         """Randomly distributes set pacgums in empty corridors"""
 
         # Collecting empty corridors
