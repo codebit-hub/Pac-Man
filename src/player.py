@@ -83,14 +83,16 @@ class Player:
 
         # Calculate time required to cross 1 tile
         time_per_tile = 1.0 / self.speed
+        moved = False
 
-        if self.move_timer >= time_per_tile:
+        while self.move_timer >= time_per_tile:
             # Enough time accumulated to move
             # subtract this time and move
             self.move_timer -= time_per_tile
-            return self._attempt_move(grid)
+            if self._attempt_move(grid):
+                moved = True
 
-        return False
+        return moved
 
     def _attempt_move(self, grid: list[list[int]]) -> bool:
         """Attempts to move pacman in current direction"""
