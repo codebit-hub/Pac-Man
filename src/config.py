@@ -25,7 +25,8 @@ class ConfigManager:
             "points_per_super_pacgum": 50,
             "points_per_ghost": 200,
             "seed": 42,
-            "level_max_time": 90
+            "level_max_time": 90,
+            "ghost_behavior_random": False
         }
         self._config: dict[str, Any] = self._defaults.copy()
 
