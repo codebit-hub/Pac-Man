@@ -1,7 +1,7 @@
 import pygame
 import os
 import math
-from typing import Optional
+from typing import Optional, cast
 from maze_loader import MazeLoader
 
 class Render:
@@ -44,7 +44,7 @@ class Render:
         if self.sheet is None:
             return None
         rect = pygame.Rect(x * tile_size, y * tile_size, tile_size * 2, tile_size * 2)
-        return self.sheet.subsurface(rect)
+        return cast(pygame.Surface, self.sheet.subsurface(rect))
 
     def draw_wall(self, x: int, y: int, is_logo: bool = False) -> None:
         if not self.screen:
