@@ -160,8 +160,9 @@ class Menu:
         """Execute the action for the selected menu item."""
         if index == 1:
             self.state = "instructions"
-        # index 0 = Start, 2 = HighScores, 3 = Exit can be wired up later
-
+        elif index == 3:
+            pygame.quit()
+            sys.exit()
 
 
 if __name__ == "__main__":
