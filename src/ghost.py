@@ -56,6 +56,12 @@ class Ghost:
         self.grid_x = -1
         self.grid_y = -1
 
+    def reverse_direction(self) -> None:
+        """Reverses ghost direction"""
+
+        if self.current_dir != Direction.NONE:
+            self.current_dir = self._get_opposite_dir(self.current_dir)
+
     def get_target_tile(
             self,
             pacman_x: int,

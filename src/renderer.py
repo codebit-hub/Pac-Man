@@ -46,7 +46,7 @@ class Render:
         except (pygame.error, FileNotFoundError) as err:
             print(f"Warning: Could not load spritesheet '{filepath}': {err}")
             self.sheet = None
-    
+
     def get_sprite(self, x: int, y: int, tile_size: int = 16) -> Optional[pygame.Surface]:
         if self.sheet is None:
             return None
@@ -74,7 +74,7 @@ class Render:
         except (pygame.error, FileNotFoundError) as err:
             print(f"Warning: Could not load dot sprite '{filepath}': {err}")
             self.dot_img = None
-    
+
     def load_player_frames(self, base_dir: str) -> None:
         """Load all directional animation frames for pacman."""
         dir_folders = {
@@ -115,7 +115,7 @@ class Render:
         cx = x * self.title_size + self.title_size // 2
         cy = y * self.title_size + self.title_size // 2
         pygame.draw.circle(self.screen, (255, 255, 255), (cx, cy), r)
-    
+
     def draw_player(self, grid_x: int, grid_y: int, direction: Direction, delta_time: float) -> None:
         """Draw pacman at grid position with directional animation."""
         px = grid_x * self.title_size
@@ -137,7 +137,7 @@ class Render:
     def render_frame(self) -> None:
         """Flip the display buffer to the monitor."""
         pygame.display.flip()
-        
+
 
 
 if __name__ == "__main__":
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     loader = MazeLoader()
 
     # Generate maze first so we know the real grid dimensions
-    loader.generate(width=17, height=25, seed=42, pacgum_count=42)
+    loader.generate(width=15, height=18, seed=42, pacgum_count=42)
     grid = loader.get_grid()
     grid_width = len(grid[0])
     grid_height = len(grid)
