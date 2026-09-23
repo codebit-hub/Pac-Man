@@ -116,7 +116,14 @@ class Ghost:
             return False
 
         self.move_timer += delta_time
-        time_per_tile = 1.0 / self.speed
+
+        # Apply 50% speed penalty if in Flee mode
+        if self.state == GhostState.FLEE:
+            current_speed = self.speed * 0.5
+        else:
+            current_speed = self.speed
+
+        time_per_tile = 1.0 / current_speed
         moved = False
 
         while self.move_timer >= time_per_tile:

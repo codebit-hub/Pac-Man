@@ -12,7 +12,7 @@ class Render:
         pygame.init()
         self.max_w = max_width
         self.max_h = max_heigth
-        self.title_size: int = 16
+        self.tile_size: int = 16
         self.sheet = None
         self.dot_img: Optional[pygame.Surface] = None
         self._powergum_tick: int = 0
@@ -23,18 +23,17 @@ class Render:
         self.last_dir: Direction = Direction.RIGHT  # fallback facing direction
 
     def setup_display(self, grid_w: int, grid_h: int) -> None:
-        """Calculate tile size and create the Pygame window."""
-        title_w = self.max_w // grid_w
-        title_h = self.max_h // grid_h
+        """Calculate tile size and create the Pygame window with HUD space."""
+        tile_w = self.max_w // grid_w
+        tile_h = (self.max_h - 50) // grid_h  # Reserve 50px for the HUD
 
-        self.title_size = min(title_w, title_h)
+        self.tile_size = min(tile_w, tile_h)
 
-        win_w = self.title_size * grid_w
-        win_h = self.title_size * grid_h
+        win_w = self.tile_size * grid_w
+        win_h = (self.tile_size * grid_h) + 50  # Add HUD space to window
 
         self.screen = pygame.display.set_mode((win_w, win_h))
-        pygame.display.set_caption("PacMan")
-
+        pygame.display.set_caption("Pac-Man")
 
     def load_spritesheet(self, filepath: str) -> None:
         """Safely load the spritesheet or fallback to basic shapes."""
@@ -47,30 +46,44 @@ class Render:
             print(f"Warning: Could not load spritesheet '{filepath}': {err}")
             self.sheet = None
 
-    def get_sprite(self, x: int, y: int, tile_size: int = 16) -> Optional[pygame.Surface]:
+    def get_sprite(self, col: int, row: int, base: int = 16) -> Optional[pygame.Surface]:
+        """Extract a 32x32 sprite using a 16px grid map, then scale it."""
         if self.sheet is None:
             return None
-        rect = pygame.Rect(x * tile_size, y * tile_size, tile_size * 2, tile_size * 2)
-        return cast(pygame.Surface, self.sheet.subsurface(rect))
+        # Vokotera mapped using 16px steps, but the sprites are 32x32
+        rect = pygame.Rect(col * base, row * base, base * 2, base * 2)
+        surf = cast(pygame.Surface, self.sheet.subsurface(rect))
+        return pygame.transform.scale(surf, (self.tile_size, self.tile_size))
+
+    def load_ghost_sprites(self) -> None:
+        """Extract 16x16 ghost sprites from the spritesheet."""
+        self.ghost_sprites = {
+            "Red": self.get_sprite(0, 4),
+            "Pink": self.get_sprite(2, 4),
+            "Cyan": self.get_sprite(4, 4),
+            "Orange": self.get_sprite(6, 4),
+            "Flee": self.get_sprite(8, 4),
+            "Flash": self.get_sprite(10, 4),
+            "Eyes": self.get_sprite(12, 4)
+        }
 
     def draw_wall(self, x: int, y: int, is_logo: bool = False) -> None:
+        """Draw continuous solid arcade walls."""
         if not self.screen:
-            return None
+            return
 
-        rect = (
-            x * self.title_size,
-            y * self.title_size,
-            self.title_size,
-            self.title_size
+        rect = pygame.Rect(
+            x * self.tile_size, y * self.tile_size,
+            self.tile_size, self.tile_size
         )
-        color = (0, 100, 255) if is_logo else (0, 0, 255)
+        color = (50, 100, 255) if is_logo else (0, 0, 200)
         pygame.draw.rect(self.screen, color, rect)
 
     def load_dot(self, filepath: str) -> None:
         """Load the pacgum dot sprite, or set to None for fallback drawing."""
         try:
             img = pygame.image.load(filepath).convert_alpha()
-            self.dot_img = pygame.transform.scale(img, (self.title_size, self.title_size))
+            self.dot_img = pygame.transform.scale(img, (self.tile_size, self.tile_size))
         except (pygame.error, FileNotFoundError) as err:
             print(f"Warning: Could not load dot sprite '{filepath}': {err}")
             self.dot_img = None
@@ -89,7 +102,7 @@ class Render:
                 path = os.path.normpath(os.path.join(base_dir, folder, f"{i}.png"))
                 try:
                     img = pygame.image.load(path).convert_alpha()
-                    img = pygame.transform.scale(img, (self.title_size, self.title_size))
+                    img = pygame.transform.scale(img, (self.tile_size, self.tile_size))
                     frames.append(img)
                 except (pygame.error, FileNotFoundError) as err:
                     print(f"Warning: Could not load '{path}': {err}")
@@ -97,29 +110,29 @@ class Render:
 
     def draw_pacgum(self, x: int, y: int) -> None:
         """Draw a pacgum (small dot) at grid position (x, y)."""
-        px = x * self.title_size
-        py = y * self.title_size
+        px = x * self.tile_size
+        py = y * self.tile_size
         if self.dot_img:
             self.screen.blit(self.dot_img, (px, py))
         else:
-            cx = px + self.title_size // 2
-            cy = py + self.title_size // 2
-            r = max(2, self.title_size // 6)
+            cx = px + self.tile_size // 2
+            cy = py + self.tile_size // 2
+            r = max(2, self.tile_size // 6)
             pygame.draw.circle(self.screen, (255, 220, 50), (cx, cy), r)
 
     def draw_powergum(self, x: int, y: int) -> None:
         """Draw a power pellet (big pulsing dot) at grid position (x, y)."""
         self._powergum_tick += 1
         pulse = 0.5 + 0.3 * math.sin(self._powergum_tick * 0.15)
-        r = max(3, int(self.title_size * pulse * 0.5))
-        cx = x * self.title_size + self.title_size // 2
-        cy = y * self.title_size + self.title_size // 2
+        r = max(3, int(self.tile_size * pulse * 0.5))
+        cx = x * self.tile_size + self.tile_size // 2
+        cy = y * self.tile_size + self.tile_size // 2
         pygame.draw.circle(self.screen, (255, 255, 255), (cx, cy), r)
 
     def draw_player(self, grid_x: int, grid_y: int, direction: Direction, delta_time: float) -> None:
         """Draw pacman at grid position with directional animation."""
-        px = grid_x * self.title_size
-        py = grid_y * self.title_size
+        px = grid_x * self.tile_size
+        py = grid_y * self.tile_size
 
         # Advance animation timer
         self.anim_timer += delta_time
@@ -137,6 +150,41 @@ class Render:
     def render_frame(self) -> None:
         """Flip the display buffer to the monitor."""
         pygame.display.flip()
+
+    def draw_ghost(
+        self, x: int, y: int, color: str, state_val: int, f_timer: float
+    ) -> None:
+        """Draw ghost with basic bobbing animation based on state."""
+        px = x * self.tile_size
+        py = y * self.tile_size
+
+        # Simple bobbing animation using the global tick
+        offset_y = 2 if self.anim_frame % 2 == 0 else 0
+
+        # State 3 is FLEE, State 4 is EATEN
+        if state_val == 4:
+            sprite = self.ghost_sprites.get("Eyes")
+        elif state_val == 3:
+            # Flash white if timer is running out (< 2 seconds)
+            if f_timer < 2.0 and self.anim_frame % 2 == 0:
+                sprite = self.ghost_sprites.get("Flash")
+            else:
+                sprite = self.ghost_sprites.get("Flee")
+        else:
+            sprite = self.ghost_sprites.get(color)
+
+        if sprite:
+            self.screen.blit(sprite, (px, py + offset_y))
+
+    def draw_hud(self, score: int, lives: int, time_left: float, level: int, wave_mode: str) -> None:
+        """Draw basic game stats at the bottom of the screen."""
+        if not hasattr(self, 'font'):
+            self.font = pygame.font.SysFont(None, 24)
+
+        hud_text = (f"Level: {level}     Score: {score}     Lives: {lives}"
+                    f"     Time: {int(time_left)}     Mode: {wave_mode}")
+        surf = self.font.render(hud_text, True, (255, 255, 255))
+        self.screen.blit(surf, (20, self.screen.get_height() - 35))
 
 
 

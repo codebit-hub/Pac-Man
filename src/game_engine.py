@@ -56,6 +56,7 @@ class GameEngine:
 
         self.renderer.load_dot(dot_path)
         self.renderer.load_player_frames(player_path)
+        self.renderer.load_ghost_sprites()
 
     def _update_wave_timers(self, delta_time: float) -> None:
         """Manages global switching Scatter/Chase"""
