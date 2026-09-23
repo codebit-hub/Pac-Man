@@ -18,7 +18,7 @@ class ConfigManager:
         self._defaults: dict[str, Any] = {
             "game_mode": "game",
             "highscore_filename": "highscore.json",
-            "levels": [{"width": 21, "height": 15}],
+            "levels": [{"width": 15, "height": 15}],
             "lives": 3,
             "pacgum": 42,
             "points_per_pacgum": 10,
@@ -88,7 +88,8 @@ class ConfigManager:
             expected_type = type(self._defaults[key])
 
             if not isinstance(value, expected_type):
-                print(f"Warning: '{key}' needs {expected_type.__name__}.")
+                print(f"Warning: '{key}' needs {expected_type.__name__}. "
+                      "Clamping.")
                 continue
 
             # Reset invalid values to safe defaults
@@ -147,19 +148,21 @@ class ConfigManager:
             if not isinstance(lvl, dict):
                 continue
 
-            w = lvl.get("width", 21)
+            w = lvl.get("width", 15)
             h = lvl.get("height", 15)
 
             # Ensuring dimensions are integers and correctly sized
-            if not isinstance(w, int) or not (17 <= w <= 35):
-                w = 21
+            # not (17 <= w <= 35):
+            if not isinstance(w, int) or not (15 <= w <= 35):
+                w = 15
+            # h < 15:
             if not isinstance(h, int) or h < 15:
                 h = 15
             safe_levels.append({"width": w, "height": h})
 
         if not safe_levels:
             print("Warning: No valid levels found. Using default.")
-            return [{"width": 21, "height": 15}]
+            return [{"width": 15, "height": 15}]
 
         return safe_levels
 
@@ -189,7 +192,7 @@ if __name__ == "__main__":
 
     lvls = cfg.get("levels")
     # assert len(lvls) == 3
-    assert lvls[0]["width"] == 21
+    assert lvls[0]["width"] == 15
     assert lvls[0]["height"] == 15
 
     print("[+] All configuration checks passed.")

@@ -120,7 +120,8 @@ class MazeLoader:
                     # [4][-]
                     if x < width - 1 and y < height - 1:
                         if (raw_maze[y][x + 1] == 15
-                                and raw_maze[y + 1][x] == 15):
+                                and raw_maze[y + 1][x] == 15
+                                and raw_maze[y + 1][x + 1] == 15):
                             self.grid[gy + 1][gx + 1] = 4
                     continue
 

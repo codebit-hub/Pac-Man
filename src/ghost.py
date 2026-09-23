@@ -56,6 +56,12 @@ class Ghost:
         self.grid_x = -1
         self.grid_y = -1
 
+    def reverse_direction(self) -> None:
+        """Reverses ghost direction"""
+
+        if self.current_dir != Direction.NONE:
+            self.current_dir = self._get_opposite_dir(self.current_dir)
+
     def get_target_tile(
             self,
             pacman_x: int,
@@ -110,7 +116,14 @@ class Ghost:
             return False
 
         self.move_timer += delta_time
-        time_per_tile = 1.0 / self.speed
+
+        # Apply 50% speed penalty if in Flee mode
+        if self.state == GhostState.FLEE:
+            current_speed = self.speed * 0.5
+        else:
+            current_speed = self.speed
+
+        time_per_tile = 1.0 / current_speed
         moved = False
 
         while self.move_timer >= time_per_tile:
