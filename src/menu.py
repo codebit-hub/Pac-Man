@@ -11,7 +11,7 @@ class Menu:
         self.dot_power = dot_power
         self.pacgum_power = pacgum_power
         self.pacgums_nb = pacgums_nb
-        self.selected_item = 0  
+        self.selected_item = 0
         self._menu_rects: list[pygame.Rect] = []
 
         self.renderer = Render()
@@ -27,7 +27,7 @@ class Menu:
         except (pygame.error, FileNotFoundError) as err:
             print("Warning: Custom font missing. Using default.")
             self.font = pygame.font.SysFont(None, 36)
-    
+
     def draw_main_menu(self) -> None:
         self.screen.fill((0,0,0))
         if self.state == "main":
@@ -78,13 +78,13 @@ class Menu:
             blink_ghost_white = get_sp(10, 4)
 
             pacman_txt = self.font_inst_regular.render("avoids", True, (0, 0, 0))
-            
+
             self.screen.blit(ins_title, ins_title.get_rect(center=(cx, bg_rect.top + 50)))
 
             y_pos = bg_rect.top + 100
             pygame.draw.rect(self.screen, (0, 0, 0), (bg_rect.left + 10, y_pos + 10, 10, 10))
             self.screen.blit(pacman, pacman.get_rect(topleft=(bg_rect.left + 30, y_pos)))
-            
+
             txt_rect = pacman_txt.get_rect(topleft=(bg_rect.left + 70, y_pos + 5))
             self.screen.blit(pacman_txt, txt_rect)
 
