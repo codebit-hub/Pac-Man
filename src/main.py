@@ -62,11 +62,24 @@ class Application:
         self.loader = MazeLoader()
 
         # Pull base dimensions, can increase difficulty by scaling size later
-        lvl_cfg = self.config.get("levels")[0]
+        level_cfgs = self.config.get("level")
+
+        # Use config.json level dimensions or default
+        if self.game_state.current_level_idx < len(level_cfgs):
+            lvl_cfg = level_cfgs[self.game_state.current_level_idx]
+        else:
+            lvl_cfg = {"width": 15, "height": 15}
+
+        # Random seed for levels > 1
+        if self.game_state.current_level_idx == 0:
+            level_seed = self.config.get("seed")
+        else:
+            level_seed = random.randint(1, 999999)
+
         self.loader.generate(
             width=lvl_cfg["width"],
             height=lvl_cfg["height"],
-            seed=self.config.get("seed") + self.game_state.current_level_idx,
+            seed=level_seed,
             pacgum_count=self.config.get("pacgum")
         )
         self.grid = self.loader.get_grid()

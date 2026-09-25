@@ -1,6 +1,6 @@
 """
-Configuration module.
-Loads and validates JSON config.
+Central Game Configuration module.
+Loads and validates settings from config.json.
 Supports comments starting with #.
 Ensures save fallbacks for missing or invalid values.
 """
@@ -18,7 +18,8 @@ class ConfigManager:
         self._defaults: dict[str, Any] = {
             "game_mode": "game",
             "highscore_filename": "highscore.json",
-            "levels": [{"width": 15, "height": 15}],
+            "levels": 12,
+            "level": [{"width": 15, "height": 15}],
             "lives": 3,
             "pacgum": 42,
             "points_per_pacgum": 10,
@@ -117,7 +118,14 @@ class ConfigManager:
                     self._config["highscore_filename"] = val_str
 
             elif key == "levels":
-                self._config["levels"] = self._validate_levels(value)
+                if value <= 0:
+                    print("Warning: 'levels' must be > 0. Reset to default.")
+                    self._config["levels"] = 12
+                else:
+                    self._config["levels"] = value
+
+            elif key == "level":
+                self._config["level"] = self._validate_level(value)
 
             elif key == "lives" and value <= 0:
                 print("Warning: 'lives' must be > 0. Reset to 3.")
@@ -135,29 +143,47 @@ class ConfigManager:
                 print("Warning: 'level_max_time' > 0. Reset to 90.")
                 self._config["level_max_time"] = 90
 
+            elif key == "ghost_behavior_random":
+                self._config["ghost_behavior_random"] = value
+
             else:
                 self._config[key] = value
 
-    def _validate_levels(
-            self, levels: list[dict[str, Any]]
+    def _validate_level(
+            self, level: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
-        """Validate the levels array structure"""
+        """Validate the level array structure"""
 
         safe_levels: list[dict[str, Any]] = []
-        for lvl in levels:
+
+        for i, lvl in enumerate(level):
             if not isinstance(lvl, dict):
                 continue
 
-            w = lvl.get("width", 15)
-            h = lvl.get("height", 15)
-
-            # Ensuring dimensions are integers and correctly sized
-            # not (17 <= w <= 35):
-            if not isinstance(w, int) or not (15 <= w <= 35):
+            # Validating 'width'
+            if "width" not in lvl:
+                print(f"Warning: 'width' is missing for Level {i}. Clamping.")
                 w = 15
-            # h < 15:
-            if not isinstance(h, int) or h < 15:
+            else:
+                w = lvl["width"]
+                # Ensuring dimensions are integers and correctly sized
+                # not (17 <= w <= 35):
+                if not isinstance(w, int) or not (15 <= w <= 35):
+                    print(f"Incorrect width dimensions for Level {i}. "
+                          "Clamping.")
+                    w = 15
+
+            # h !< 15:
+            if "height" not in lvl:
+                print(f"Warning: 'height' is missing for Level {i}. Clamping.")
                 h = 15
+            else:
+                h = lvl["height"]
+                if not isinstance(h, int) or not (15 <= h <= 35):
+                    print(f"Incorrect height dimensions for Level {i}. "
+                          "Clamping.")
+                    h = 15
+
             safe_levels.append({"width": w, "height": h})
 
         if not safe_levels:
@@ -184,17 +210,28 @@ if __name__ == "__main__":
 
     cfg = ConfigManager()
     cfg.load(test_file)
-
+    lvls = cfg.get("level")
+    """
     assert cfg.get("game_mode") == "game"
-    assert cfg.get("lives") == 3  # Successfully clamped
-    assert cfg.get("seed") == 42  # Prevented bad type
-    assert cfg.get("unknown_key") is None  # Prevented unknown key
+    assert cfg.get("highscore_filename") == "highscore.json"
+    assert cfg.get("levels") == 12
 
-    lvls = cfg.get("levels")
-    # assert len(lvls) == 3
+    assert len(lvls) == 3
     assert lvls[0]["width"] == 15
     assert lvls[0]["height"] == 15
 
+    assert cfg.get("lives") == 3  # Successfully clamped
+    assert cfg.get("pacgum") == 1
+    assert cfg.get("points_per_pacgum") == 10
+    assert cfg.get("points_per_super_pacgum") == 50
+    assert cfg.get("points_per_ghost") == 200
+    assert cfg.get("seed") == 42  # Prevented bad type
+    assert cfg.get("level_max_time") == 90
+    assert cfg.get("ghost_behavior_random") == False
+    assert cfg.get("unknown_key") is None  # Prevented unknown key
+
+    """
+    print(f"levels len: {len(lvls)}.")
+    print(f"\n{cfg._config}")
     print("[+] All configuration checks passed.")
 
-    print(f"\n{cfg._config}")

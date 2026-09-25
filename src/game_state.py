@@ -117,10 +117,10 @@ class GameState:
     def _check_victory(self) -> None:
         """Manages level progression"""
 
-        levels = self.config.get("levels")
         self.current_level_idx += 1
+        max_levels = self.config.get("levels")
 
-        if self.current_level_idx >= len(levels):
+        if self.current_level_idx >= max_levels:
             self.state = State.VICTORY
         else:
             self.state = State.LEVEL_TRANSITION
