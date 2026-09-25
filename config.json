@@ -1,7 +1,7 @@
 {
-    #: "Central Game Configuration File"
-    #: "The are two game modes: game and evaluation"
-    "game_mode": "game"
+    #: "Central Game Configuration File",
+    #: "The are two game modes: game and evaluation",
+    "game_mode": "game",
     "highscore_filename": "highscore.json",
     "levels": 12,
     "level": [

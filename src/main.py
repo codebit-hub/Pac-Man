@@ -206,7 +206,7 @@ class Application:
         if self.game_state.state == State.LEVEL_TRANSITION:
             self._load_level()
             return
-        elif self.game_state.state == State.GAME_OVER:
+        elif self.game_state.state in (State.GAME_OVER, State.VICTORY):
             self.highscores.add_score("PLY", self.game_state.score)
             self.app_state = "GAME_OVER"
             return
@@ -288,8 +288,19 @@ class Application:
 
         self.screen.fill((0, 0, 0))
         font = pygame.font.SysFont(None, 48)
-        text = font.render(f"GAME OVER - Score: {self.game_state.score}", True, (255, 0, 0))
-        self.screen.blit(text, text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2)))
+
+        if self.game_state.state == State.VICTORY:
+            msg = "VICTORY!"
+            color = (0, 255, 0)  # Green
+        else:
+            msg = "GAME OVER"
+            color = (255, 0, 0) # Red
+
+        text = font.render(f"{msg} - Score: {self.game_state.score}", True, color)
+        self.screen.blit(
+            text,
+            text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2))
+        )
         pygame.display.flip()
 
     def _run_highscore_screen(self) -> None:
