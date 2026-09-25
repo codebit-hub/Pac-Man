@@ -42,7 +42,9 @@ class ConfigManager:
             with open(filepath, "r", encoding="utf-8") as file:
                 for line in file:
                     stripped = line.strip()
-                    if not stripped.startswith('#'):
+                    if not (stripped.startswith('#')
+                            or stripped.startswith('"#')
+                            or stripped.startswith("'#")):
                         raw_lines.append(line)
 
         except (FileNotFoundError, OSError) as err:
