@@ -15,12 +15,12 @@ class Render:
             pacman_icon = os.path.normpath(os.path.join(
             os.path.dirname(__file__), "..", "Sprites", "pacman-art", "pacman-right", "1.png"
             ))
-            loaded_img = pygame.image.load(pacman_icon).convert_alpha()
+            loaded_img = pygame.image.load(pacman_icon)
             orig_w, orig_h = loaded_img.get_size()
             padded_img = pygame.Surface((orig_w * 2, orig_h * 2), pygame.SRCALPHA)
             padded_img.blit(loaded_img, (orig_w // 2, orig_h // 2))
             pygame.display.set_icon(padded_img)
-        except Exception:
+        except (FileNotFoundError, pygame.error):
             print("Warning: Couldn't load pacman icon")
         self.max_w = max_width
         self.max_h = max_heigth

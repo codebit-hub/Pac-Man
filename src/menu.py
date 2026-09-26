@@ -1,3 +1,6 @@
+import math
+from re import S
+from re import A
 from pygame import font
 import pygame
 import sys
@@ -5,11 +8,11 @@ import os
 from renderer import Render
 
 class Menu:
-    def __init__(self, screen: pygame.Surface, dot_power: int = 10, pacgum_power: int = 50, pacgums_nb: int = 4) -> None:
+    def __init__(self, screen: pygame.Surface, pacgums_power: int = 10, super_pacgums_power: int = 50, pacgums_nb: int = 4) -> None:
         self.screen = screen
         self.state = "main"
-        self.dot_power = dot_power
-        self.pacgum_power = pacgum_power
+        self.pacgums_power = pacgums_power
+        self.super_pacgums_power = super_pacgums_power
         self.pacgums_nb = pacgums_nb
         self.selected_item = 0
         self._menu_rects: list[pygame.Rect] = []
@@ -125,25 +128,44 @@ class Menu:
             cy = self.screen.get_height() // 2
 
             # --- Panel ---
-            panel_w, panel_h = 550, 500
+            # Panel scales with window, capped at 550x500
+            panel_w = min(int(self.screen.get_width() * 0.82), 600)
+            panel_h = min(int(self.screen.get_height() * 0.82), 400)
             bg_rect = pygame.Rect(0, 0, panel_w, panel_h)
             bg_rect.center = (cx, cy)
-            pygame.draw.rect(self.screen, (255,0,255), bg_rect)
+            pygame.draw.rect(self.screen, (0, 23, 68), bg_rect)
 
-            ins_title = self.font_inst_title.render("Instructions", True, (0, 0, 0))
+            ins_title = self.font_inst_title.render("Instructions", True, (255,255,255))
             blink_ghost_white = get_sp(10, 4)
-
-            pacman_txt = self.font_inst_regular.render("avoids", True, (0, 0, 0))
-
+            pacman_txt = self.font_inst_regular.render("avoids", True, (255,255,255))
             self.screen.blit(ins_title, ins_title.get_rect(center=(cx, bg_rect.top + 50)))
 
-            y_pos = bg_rect.top + 100
-            pygame.draw.rect(self.screen, (0, 0, 0), (bg_rect.left + 10, y_pos + 10, 10, 10))
-            self.screen.blit(pacman, pacman.get_rect(topleft=(bg_rect.left + 30, y_pos)))
+            # X close button in top-right corner of panel
+            close_margin = 15
+            # Vykreslíme X větším fontem nanečisto, abychom získali přesnou velikost pro hitbox
+            dummy_surf = self.font_inst_title.render("X", True, (255, 255, 255))
+            self._close_rect = dummy_surf.get_rect(topright=(bg_rect.right - close_margin, bg_rect.top + close_margin))
+            
+            mouse_pos = pygame.mouse.get_pos()
+            close_color = (255, 80, 80) if self._close_rect.collidepoint(mouse_pos) else (180, 180, 180)
+            
+            close_surf = self.font_inst_title.render("X", True, close_color)
+            self.screen.blit(close_surf, self._close_rect)
 
+            def draw_bullet(y):
+                tip_x = bg_rect.left + 20
+                mid_y = y + 15
+                pygame.draw.polygon(self.screen, (255, 255, 255), [
+                    (tip_x - 10, mid_y - 7),
+                    (tip_x - 10, mid_y + 7),
+                    (tip_x, mid_y),
+                ])
+
+            y_pos = bg_rect.top + 100
+            draw_bullet(y_pos)
+            self.screen.blit(pacman, pacman.get_rect(topleft=(bg_rect.left + 30, y_pos)))
             txt_rect = pacman_txt.get_rect(topleft=(bg_rect.left + 70, y_pos + 5))
             self.screen.blit(pacman_txt, txt_rect)
-
             ghost_x = txt_rect.right + 10
             self.screen.blit(blinky, blinky.get_rect(topleft=(ghost_x, y_pos)))
             self.screen.blit(pinky, pinky.get_rect(topleft=(ghost_x + 30, y_pos)))
@@ -151,29 +173,44 @@ class Menu:
             self.screen.blit(clyde, clyde.get_rect(topleft=(ghost_x + 90, y_pos)))
 
             y_pos = bg_rect.top + 150
-            dots_txt = self.font_inst_regular.render(f"DOTS SCORE {self.dot_power} POINTS", True, (0, 0, 0))
-            pygame.draw.rect(self.screen, (0, 0, 0), (bg_rect.left + 10, y_pos + 10, 10, 10))
-            pygame.draw.circle(self.screen, (128, 128, 128), [bg_rect.left + 35, y_pos + 15], 5)
-            pygame.draw.circle(self.screen, (128, 128, 128), [bg_rect.left + 50, y_pos + 15], 5)
-            pygame.draw.circle(self.screen, (128, 128, 128), [bg_rect.left + 65, y_pos + 15], 5)
+            draw_bullet(y_pos)
+            dots_txt = self.font_inst_regular.render(f"PACGUMS SCORE {self.pacgums_power} POINTS", True, (255,255,255))
+            pygame.draw.circle(self.screen, (255,255,255), [bg_rect.left + 35, y_pos + 15], 5)
+            pygame.draw.circle(self.screen, (255,255,255), [bg_rect.left + 50, y_pos + 15], 5)
+            pygame.draw.circle(self.screen, (255,255,255), [bg_rect.left + 65, y_pos + 15], 5)
             self.screen.blit(dots_txt, dots_txt.get_rect(topleft=(bg_rect.left + 85, y_pos + 5)))
 
             y_pos = bg_rect.top + 200
-            pacgums_nb_txt = self.font_inst_regular.render(f"{self.pacgums_nb}", True, (0, 0, 0))
-            pacgums_power_txt = self.font_inst_regular.render(f"FLASHING ENERGIZERS SCORE {self.pacgum_power} POINTS", True, (0, 0, 0))
-            pygame.draw.rect(self.screen, (0, 0, 0), (bg_rect.left + 10, y_pos + 10, 10, 10))
+            draw_bullet(y_pos)
+            pacgums_nb_txt = self.font_inst_regular.render(f"{self.pacgums_nb}", True, (255,255,255))
+            pacgums_power_txt = self.font_inst_regular.render(f"FLASHING SUPER PACGUMS SCORE {self.super_pacgums_power} POINTS", True, (255,255,255))
             self.screen.blit(pacgums_nb_txt, pacgums_nb_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 5)))
-            pygame.draw.circle(self.screen, (0, 0, 0), [bg_rect.left + 65, y_pos + 12], 10)
+            pygame.draw.circle(self.screen, (255,255,255), [bg_rect.left + 65, y_pos + 12], 10)
             self.screen.blit(pacgums_power_txt, pacgums_power_txt.get_rect(topleft=(bg_rect.left + 90, y_pos + 5)))
 
             y_pos = bg_rect.top + 250
-            pygame.draw.rect(self.screen, (0, 0, 0), (bg_rect.left + 10, y_pos + 10, 10, 10))
-            energezing_pc_txt = self.font_inst_regular.render(f"AFTER ENERGIZING", True, (0, 0, 0))
-            energezing_ghost_txt = self.font_inst_regular.render(f"CAN ATTACK", True, (0, 0, 0))
+            draw_bullet(y_pos)
+            energezing_pc_txt = self.font_inst_regular.render("AFTER POWER UP", True, (255,255,255))
+            energezing_ghost_txt = self.font_inst_regular.render("CAN EAT", True, (255,255,255))
             self.screen.blit(energezing_pc_txt, energezing_pc_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 5)))
-            self.screen.blit(pacman, pacman.get_rect(topleft=(bg_rect.left + 225, y_pos)))
+            self.screen.blit(pacman, pacman.get_rect(topleft=(bg_rect.left + 220, y_pos)))
             self.screen.blit(energezing_ghost_txt, energezing_ghost_txt.get_rect(topleft=(bg_rect.left + 260, y_pos + 5)))
-            self.screen.blit(blink_ghost_white, blink_ghost_white.get_rect(topleft=(bg_rect.left + 390, y_pos)))
+            self.screen.blit(blink_ghost_white, blink_ghost_white.get_rect(topleft=(bg_rect.left + 360, y_pos)))
+
+            y_pos = bg_rect.top + 300
+            draw_bullet(y_pos)
+            controls_txt = self.font_inst_regular.render("CONTROLS: [W][A][S][D] OR ARROWS TO MOVE", True, (255,255,255))
+            self.screen.blit(controls_txt, controls_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 5)))
+
+            # Pulsing ESC hint
+            current_time = pygame.time.get_ticks()
+            pulse = (math.sin(current_time * 0.005) + 1) / 2
+            alpha = int(100 + 155 * pulse)
+            nav_return = self.font_inst_regular.render("PRESS [ESC] TO RETURN OR CLICK", True, (255, 255, 255))
+            nav_return.set_alpha(alpha)
+            self.screen.blit(nav_return, nav_return.get_rect(center=(cx, bg_rect.bottom + 20)))
+
+
 
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle keyboard and mouse input for menu navigation."""
@@ -209,8 +246,11 @@ class Menu:
         elif self.state == "instructions":
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.state = "main"
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.state = "main"
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if hasattr(self, "_close_rect") and self._close_rect.collidepoint(event.pos):
+                    self.state = "main"
+                else:
+                    self.state = "main"
 
     def _activate_item(self, index: int) -> None:
         """Execute the action for the selected menu item."""
