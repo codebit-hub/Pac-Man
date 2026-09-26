@@ -95,6 +95,9 @@ class Application:
         # Setup Renderer
         grid_w, grid_h = len(self.grid[0]), len(self.grid)
 
+        # Update the existing renderer to dynamically scale the tile size
+        self.render.setup_display(grid_w, grid_h)
+        
         base = os.path.dirname(__file__)
         self.render.load_spritesheet(os.path.normpath(
             os.path.join(base, "..", "Sprites", "2-Sprites", "spritesheet.png")))
