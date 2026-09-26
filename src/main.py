@@ -35,7 +35,7 @@ class Application:
         self.highscores = HighScoreManager(self.config.get("highscore_filename"))
 
         # Setup Vokotera's Menu and Monkey-Patch the selections
-        self.menu = Menu(self.screen)
+        self.menu = Menu(self.screen, self.config.get("points_per_pacgum"), self.config.get("points_per_super_pacgum"), self.config.get("pacgum"))
         self.app_state = "MENU"  # MENU, PLAYING, GAME_OVER, HIGHSCORES
 
         # Store the original menu activate method
