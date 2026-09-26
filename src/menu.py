@@ -13,10 +13,24 @@ class Menu:
         self.pacgums_nb = pacgums_nb
         self.selected_item = 0
         self._menu_rects: list[pygame.Rect] = []
+        self.anime_x: int = 1000
 
         self.renderer = Render()
         spritesheet_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "Sprites", "2-Sprites", "spritesheet.png"))
         self.renderer.load_spritesheet(spritesheet_path)
+        
+        self.last_anim_time = pygame.time.get_ticks()
+        self.anim_frame = 0
+        
+        self.pacman_frames = []
+        pacman_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "Sprites", "pacman-art", "pacman-left"))
+        for i in range(1, 4):
+            path = os.path.join(pacman_dir, f"{i}.png")
+            try:
+                img = pygame.image.load(path).convert_alpha()
+                self.pacman_frames.append(pygame.transform.scale(img, (28, 28)))
+            except Exception:
+                pass
 
         try:
             _font_path = os.path.join(os.path.dirname(__file__), "..", "emulogic-font", "Emulogic-zrEw.ttf")
@@ -30,25 +44,78 @@ class Menu:
 
     def draw_main_menu(self) -> None:
         self.screen.fill((0,0,0))
+        def get_sp(x: int, y: int):
+            surf = self.renderer.get_sprite(x, y)
+            if surf:
+                scaled = pygame.transform.scale(surf, (28, 28))
+                scaled.set_colorkey((255, 0, 255))
+                return scaled
+            return pygame.Surface((28, 28))
+
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_anim_time >= 100:
+            self.last_anim_time = current_time
+            self.anim_frame = (self.anim_frame + 1) % 3
+
+        if self.pacman_frames:
+            pacman = self.pacman_frames[self.anim_frame % len(self.pacman_frames)]
+        else:
+            pacman = get_sp(1, 0)
+        
+        blinky = get_sp(0, 8)
+        pinky = get_sp(2, 8)
+        inky = get_sp(4, 8)
+        clyde = get_sp(6, 8)
+
         if self.state == "main":
             NORMAL_COLOR  = (255, 255, 255)
-            SELECTED_COLOR = (70,191,238)
+            SELECTED_COLOR = (253, 255, 0)
+            EXIT_COLOR = (208,62,25)
 
-            labels = ["1. Start Game", "2. Instructions", "3. HighScores", "4. Exit"]
+            labels = ["Start Game", "Instructions", "HighScores", "Exit"]
 
             cx = self.screen.get_width() // 2
             cy = self.screen.get_height() // 2
 
             title = self.font_title.render("Pac-Man", True, (253, 255, 0))
-            self.screen.blit(title, title.get_rect(center=(cx, cy - 100)))
+            self.screen.blit(title, title.get_rect(center=(cx, cy - 200)))
 
             self._menu_rects = []
             for i, label in enumerate(labels):
-                color = SELECTED_COLOR if i == self.selected_item else NORMAL_COLOR
+                color = SELECTED_COLOR 
+                if i == 3 and i == self.selected_item:
+                    color = EXIT_COLOR
+                elif i == self.selected_item:
+                    color = SELECTED_COLOR
+                else:
+                    color = NORMAL_COLOR
                 surf = self.font_regular.render(label, True, color)
                 rect = surf.get_rect(center=(cx, cy + i * 50))
                 self._menu_rects.append(rect)
                 self.screen.blit(surf, rect)
+                if i == self.selected_item:
+                    mid_y = rect.centery
+                    tip_x = rect.left - 10
+                    pygame.draw.polygon(self.screen, color, [
+                        (tip_x - 10, mid_y - 7),
+                        (tip_x - 10, mid_y + 7),
+                        (tip_x, mid_y),
+                    ])
+            
+            start_x = cx - 90
+            y_pos = cy + 200
+            
+            if self.anime_x > start_x:
+                self.anime_x -= 8
+            else:
+                self.anime_x = start_x # Keep it exactly at start_x when it finishes
+
+            # Draw only once per frame at the current position
+            self.screen.blit(clyde, (self.anime_x, y_pos))
+            self.screen.blit(blinky, (self.anime_x + 38, y_pos))
+            self.screen.blit(pinky, (self.anime_x + 76, y_pos))
+            self.screen.blit(inky, (self.anime_x + 114, y_pos))
+            self.screen.blit(pacman, (self.anime_x + 152, y_pos))
 
             # Keep _instruction_rect for backward compat
             self._instruction_rect = self._menu_rects[1]
@@ -64,17 +131,6 @@ class Menu:
             pygame.draw.rect(self.screen, (255,0,255), bg_rect)
 
             ins_title = self.font_inst_title.render("Instructions", True, (0, 0, 0))
-            def get_sp(x: int, y: int):
-                surf = self.renderer.get_sprite(x, y)
-                if surf:
-                    return pygame.transform.scale(surf, (28, 28))
-                return pygame.Surface((28, 28))
-
-            pacman = get_sp(0, 0)
-            blinky = get_sp(0, 4)
-            pinky = get_sp(2, 4)
-            inky = get_sp(4, 4)
-            clyde = get_sp(6, 4)
             blink_ghost_white = get_sp(10, 4)
 
             pacman_txt = self.font_inst_regular.render("avoids", True, (0, 0, 0))

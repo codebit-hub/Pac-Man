@@ -1,3 +1,4 @@
+from pygame import image
 from os import environ
 import pygame
 import os
@@ -10,6 +11,17 @@ class Render:
     def __init__(self, max_width: int = 1260, max_heigth: int = 800) -> None:
         """Initialize the renderer with safe max window bounds."""
         pygame.init()
+        try:
+            pacman_icon = os.path.normpath(os.path.join(
+            os.path.dirname(__file__), "..", "Sprites", "pacman-art", "pacman-right", "1.png"
+            ))
+            loaded_img = pygame.image.load(pacman_icon).convert_alpha()
+            orig_w, orig_h = loaded_img.get_size()
+            padded_img = pygame.Surface((orig_w * 2, orig_h * 2), pygame.SRCALPHA)
+            padded_img.blit(loaded_img, (orig_w // 2, orig_h // 2))
+            pygame.display.set_icon(padded_img)
+        except Exception:
+            print("Warning: Couldn't load pacman icon")
         self.max_w = max_width
         self.max_h = max_heigth
         self.tile_size: int = 16
@@ -39,8 +51,7 @@ class Render:
         """Safely load the spritesheet or fallback to basic shapes."""
         try:
             self.sheet = pygame.image.load(filepath).convert()
-            transcolor = self.sheet.get_at((0,0))
-            self.sheet.set_colorkey(transcolor)
+            self.sheet.set_colorkey((255, 0, 255))
 
         except (pygame.error, FileNotFoundError) as err:
             print(f"Warning: Could not load spritesheet '{filepath}': {err}")
@@ -50,10 +61,13 @@ class Render:
         """Extract a 32x32 sprite using a 16px grid map, then scale it."""
         if self.sheet is None:
             return None
-        # Vokotera mapped using 16px steps, but the sprites are 32x32
-        rect = pygame.Rect(col * base, row * base, base * 2, base * 2)
+        offset_x = 1
+        offset_y = -0.3
+        rect = pygame.Rect((col * base) + offset_x, (row * base) + offset_y, base * 2, base * 2)
         surf = cast(pygame.Surface, self.sheet.subsurface(rect))
-        return pygame.transform.scale(surf, (self.tile_size, self.tile_size))
+        scaled = pygame.transform.scale(surf, (self.tile_size, self.tile_size))
+        scaled.set_colorkey((255, 0, 255))
+        return scaled
 
     def load_ghost_sprites(self) -> None:
         """Extract 16x16 ghost sprites from the spritesheet."""
@@ -123,7 +137,7 @@ class Render:
     def draw_powergum(self, x: int, y: int) -> None:
         """Draw a power pellet (big pulsing dot) at grid position (x, y)."""
         self._powergum_tick += 1
-        pulse = 0.5 + 0.3 * math.sin(self._powergum_tick * 0.15)
+        pulse = 0.5 + 0.3 * math.sin(self._powergum_tick * 0.05)
         r = max(3, int(self.tile_size * pulse * 0.5))
         cx = x * self.tile_size + self.tile_size // 2
         cy = y * self.tile_size + self.tile_size // 2

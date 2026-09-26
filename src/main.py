@@ -22,7 +22,9 @@ class Application:
         self.render = Render()
         self.config = ConfigManager()
 
-        self.render.setup_display(self.config.get("levels")[0]["width"], self.config.get("levels")[0]["height"])
+        lvl_w = self.config.get("level")[0]["width"]
+        lvl_h = self.config.get("level")[0]["height"]
+        self.render.setup_display((lvl_w * 2) + 1, (lvl_h * 2) + 1)
         self.screen = self.render.screen
 
         # Configurations & Highscores
@@ -63,11 +65,24 @@ class Application:
         self.loader = MazeLoader()
 
         # Pull base dimensions, can increase difficulty by scaling size later
-        lvl_cfg = self.config.get("levels")[0]
+        level_cfgs = self.config.get("level")
+
+        # Use config.json level dimensions or default
+        if self.game_state.current_level_idx < len(level_cfgs):
+            lvl_cfg = level_cfgs[self.game_state.current_level_idx]
+        else:
+            lvl_cfg = {"width": 15, "height": 15}
+
+        # Random seed for levels > 1
+        if self.game_state.current_level_idx == 0:
+            level_seed = self.config.get("seed")
+        else:
+            level_seed = random.randint(1, 999999)
+
         self.loader.generate(
             width=lvl_cfg["width"],
             height=lvl_cfg["height"],
-            seed=self.config.get("seed") + self.game_state.current_level_idx,
+            seed=level_seed,
             pacgum_count=self.config.get("pacgum")
         )
         self.grid = self.loader.get_grid()
@@ -79,17 +94,15 @@ class Application:
 
         # Setup Renderer
         grid_w, grid_h = len(self.grid[0]), len(self.grid)
-        self.renderer = Render()
-        self.renderer.setup_display(grid_w, grid_h)
 
         base = os.path.dirname(__file__)
-        self.renderer.load_spritesheet(os.path.normpath(
+        self.render.load_spritesheet(os.path.normpath(
             os.path.join(base, "..", "Sprites", "2-Sprites", "spritesheet.png")))
-        self.renderer.load_dot(os.path.normpath(
+        self.render.load_dot(os.path.normpath(
             os.path.join(base, "..", "Sprites", "pacman-art", "other", "dot.png")))
-        self.renderer.load_player_frames(os.path.normpath(
+        self.render.load_player_frames(os.path.normpath(
             os.path.join(base, "..", "Sprites", "pacman-art")))
-        self.renderer.load_ghost_sprites()
+        self.render.load_ghost_sprites()
 
         self.game_state.setup_level(self.config.get("pacgum"))
 
@@ -193,7 +206,7 @@ class Application:
         if self.game_state.state == State.LEVEL_TRANSITION:
             self._load_level()
             return
-        elif self.game_state.state == State.GAME_OVER:
+        elif self.game_state.state in (State.GAME_OVER, State.VICTORY):
             self.highscores.add_score("PLY", self.game_state.score)
             self.app_state = "GAME_OVER"
             return
@@ -228,23 +241,23 @@ class Application:
                     return
 
         # 3. Draw Frame
-        self.renderer.screen.fill((20, 20, 40))
+        self.render.screen.fill((20, 20, 40))
         for y, row in enumerate(self.grid):
             for x, cell in enumerate(row):
                 if cell == 0:
-                    self.renderer.draw_wall(x, y)
+                    self.render.draw_wall(x, y)
                 elif cell == 4:
-                    self.renderer.draw_wall(x, y, is_logo=True)
+                    self.render.draw_wall(x, y, is_logo=True)
                 elif cell == 2:
-                    self.renderer.draw_pacgum(x, y)
+                    self.render.draw_pacgum(x, y)
                 elif cell == 3:
-                    self.renderer.draw_powergum(x, y)
+                    self.render.draw_powergum(x, y)
 
-        self.renderer.draw_player(
+        self.render.draw_player(
             self.player.grid_x, self.player.grid_y, self.player.current_dir, dt
         )
         for g in self.ghosts:
-            self.renderer.draw_ghost(
+            self.render.draw_ghost(
                 g.grid_x, g.grid_y, g.color_name, g.state.value, self.game_state.frigthened_timer
             )
 
@@ -253,7 +266,7 @@ class Application:
         if self.game_state.is_frightened:
             mode_text = "FLEE"
 
-        self.renderer.draw_hud(
+        self.render.draw_hud(
             self.game_state.score,
             self.game_state.lives,
             self.game_state.time_remaining,
@@ -261,7 +274,7 @@ class Application:
             mode_text
         )
 
-        self.renderer.render_frame()
+        self.render.render_frame()
 
     def _run_game_over_screen(self) -> None:
         """Draw basic Game Over screen waiting for keypress."""
@@ -275,8 +288,19 @@ class Application:
 
         self.screen.fill((0, 0, 0))
         font = pygame.font.SysFont(None, 48)
-        text = font.render(f"GAME OVER - Score: {self.game_state.score}", True, (255, 0, 0))
-        self.screen.blit(text, text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2)))
+
+        if self.game_state.state == State.VICTORY:
+            msg = "VICTORY!"
+            color = (0, 255, 0)  # Green
+        else:
+            msg = "GAME OVER"
+            color = (255, 0, 0) # Red
+
+        text = font.render(f"{msg} - Score: {self.game_state.score}", True, color)
+        self.screen.blit(
+            text,
+            text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2))
+        )
         pygame.display.flip()
 
     def _run_highscore_screen(self) -> None:
