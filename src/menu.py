@@ -21,7 +21,7 @@ class Menu:
         try:
             _font_path = os.path.join(os.path.dirname(__file__), "..", "emulogic-font", "Emulogic-zrEw.ttf")
             self.font_regular = pygame.font.Font(os.path.normpath(_font_path), 16)
-            self.font_title = pygame.font.Font(os.path.normpath(_font_path), 32)
+            self.font_title = pygame.font.Font(os.path.normpath(_font_path), 48)
             self.font_inst_title = pygame.font.Font(os.path.normpath(_font_path), 16)
             self.font_inst_regular = pygame.font.Font(os.path.normpath(_font_path), 12)
         except (pygame.error, FileNotFoundError) as err:
@@ -32,7 +32,7 @@ class Menu:
         self.screen.fill((0,0,0))
         if self.state == "main":
             NORMAL_COLOR  = (255, 255, 255)
-            SELECTED_COLOR = (0, 180, 255)
+            SELECTED_COLOR = (70,191,238)
 
             labels = ["1. Start Game", "2. Instructions", "3. HighScores", "4. Exit"]
 

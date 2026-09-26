@@ -19,13 +19,14 @@ class Application:
     """Central app controller managing states and transitions."""
 
     def __init__(self) -> None:
-        pygame.init()
-        self.screen = pygame.display.set_mode((800, 600))
-        pygame.display.set_caption("Pac-Man")
+        self.render = Render()
+        self.config = ConfigManager()
+
+        self.render.setup_display(self.config.get("levels")[0]["width"], self.config.get("levels")[0]["height"])
+        self.screen = self.render.screen
 
         # Configurations & Highscores
         cfg_path = os.path.join(os.path.dirname(__file__), "..", "config.json")
-        self.config = ConfigManager()
         self.config.load(cfg_path)
 
         self.game_state = GameState(self.config)
@@ -181,8 +182,7 @@ class Application:
                     self.player.set_direction(Direction.RIGHT)
                 elif ev.key == pygame.K_ESCAPE:
                     self.app_state = "MENU"
-                    # Reset screen size for menu
-                    self.screen = pygame.display.set_mode((800, 600))
+                    self.menu.screen = self.render.screen
                     return
 
         # 1. Update State

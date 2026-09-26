@@ -7,7 +7,7 @@ from maze_loader import MazeLoader
 from player import Player, Direction
 
 class Render:
-    def __init__(self, max_width: int = 1280, max_heigth: int = 960) -> None:
+    def __init__(self, max_width: int = 1260, max_heigth: int = 800) -> None:
         """Initialize the renderer with safe max window bounds."""
         pygame.init()
         self.max_w = max_width
@@ -28,7 +28,7 @@ class Render:
         tile_h = (self.max_h - 50) // grid_h  # Reserve 50px for the HUD
 
         self.tile_size = min(tile_w, tile_h)
-
+        
         win_w = self.tile_size * grid_w
         win_h = (self.tile_size * grid_h) + 50  # Add HUD space to window
 
