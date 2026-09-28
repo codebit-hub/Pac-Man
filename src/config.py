@@ -93,9 +93,10 @@ class ConfigManager:
 
             expected_type = type(self._defaults[key])
 
-            if (not isinstance(value, expected_type)
+            if (
+                not isinstance(value, expected_type)
                 or (expected_type is int and isinstance(value, bool))
-                ):
+            ):
                 print(f"Warning: '{key}' needs {expected_type.__name__}. "
                       "Clamping.")
                 continue
@@ -190,9 +191,11 @@ class ConfigManager:
                 w = lvl["width"]
                 # Ensuring dimensions are integers and correctly sized
                 # not (17 <= w <= 35):
-                if (not isinstance(w, int)
+                if (
+                    not isinstance(w, int)
                     or isinstance(w, bool)
-                    or not (15 <= w <= 35)):
+                    or not (15 <= w <= 35)
+                ):
                     print(f"Incorrect width dimensions for Level {i}. "
                           "Clamping.")
                     w = 15
@@ -203,9 +206,11 @@ class ConfigManager:
                 h = 15
             else:
                 h = lvl["height"]
-                if (not isinstance(h, int)
+                if (
+                    not isinstance(h, int)
                     or isinstance(h, bool)
-                    or not (15 <= h <= 35)):
+                    or not (15 <= h <= 35)
+                ):
                     print(f"Incorrect height dimensions for Level {i}. "
                           "Clamping.")
                     h = 15
@@ -260,4 +265,3 @@ if __name__ == "__main__":
     print(f"levels len: {len(lvls)}.")
     print(f"\n{cfg._config}")
     print("[+] All configuration checks passed.")
-
