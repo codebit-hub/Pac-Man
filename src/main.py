@@ -121,14 +121,22 @@ class Application:
         w, h = len(self.grid[0]), len(self.grid)
         locs = [(w - 2, 1), (3, 1), (w - 2, h - 2), (1, h - 2)]
 
+        # Adding ghost color randomization
+        colors = ["Red", "Pink", "Cyan", "Orange"]
+
         if self.config.get("ghost_behavior_random"):
             random.shuffle(locs)
+            random.shuffle(colors)
 
         self.blinky = Blinky(locs[0][0], locs[0][1], speed=4.5)
         self.pinky = Pinky(locs[1][0], locs[1][1], speed=4.5)
         self.inky = Inky(locs[2][0], locs[2][1], speed=4.5)
         self.clyde = Clyde(locs[3][0], locs[3][1], speed=4.5)
         self.ghosts = [self.blinky, self.pinky, self.inky, self.clyde]
+
+        # Apply shuffled colors to ghosts
+        for i, ghost in enumerate(self.ghosts):
+            ghost.color_name = colors[i]
 
     def _update_wave_timers(self, delta_time: float) -> None:
         """Manage Scatter/Chase and Flee modes from GameState."""
