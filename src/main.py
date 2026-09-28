@@ -128,10 +128,22 @@ class Application:
             random.shuffle(locs)
             random.shuffle(colors)
 
-        self.blinky = Blinky(locs[0][0], locs[0][1], speed=4.5)
-        self.pinky = Pinky(locs[1][0], locs[1][1], speed=4.5)
-        self.inky = Inky(locs[2][0], locs[2][1], speed=4.5)
-        self.clyde = Clyde(locs[3][0], locs[3][1], speed=4.5)
+        # Calculate dynamic ghost speed: from 1.0 to 5.2 through levels
+        max_levels = self.config.get("levels")
+        start_speed = 1.0
+        end_speed = 5.2
+
+        if max_levels > 1:
+            speed_incr = (end_speed - start_speed) / (max_levels - 1)
+            cur_speed = start_speed + (
+                speed_incr * self.game_state.current_level_idx)
+        else:
+            cur_speed = start_speed
+
+        self.blinky = Blinky(locs[0][0], locs[0][1], speed=cur_speed)
+        self.pinky = Pinky(locs[1][0], locs[1][1], speed=cur_speed)
+        self.inky = Inky(locs[2][0], locs[2][1], speed=cur_speed)
+        self.clyde = Clyde(locs[3][0], locs[3][1], speed=cur_speed)
         self.ghosts = [self.blinky, self.pinky, self.inky, self.clyde]
 
         # Apply shuffled colors to ghosts

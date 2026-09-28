@@ -1,7 +1,10 @@
+"""
+
+"""
+
 from enum import Enum
 import os
 import sys
-# Use pacman's direction of movement cost
 from player import Direction
 
 
