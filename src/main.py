@@ -97,7 +97,7 @@ class Application:
 
         # Update the existing renderer to dynamically scale the tile size
         self.render.setup_display(grid_w, grid_h)
-        
+
         base = os.path.dirname(__file__)
         self.render.load_spritesheet(os.path.normpath(
             os.path.join(base, "..", "Sprites", "2-Sprites", "spritesheet.png")))
@@ -107,7 +107,9 @@ class Application:
             os.path.join(base, "..", "Sprites", "pacman-art")))
         self.render.load_ghost_sprites()
 
-        self.game_state.setup_level(self.config.get("pacgum"))
+        # Place into the game only the available pacgums based on empty corridors
+        actual_pacgums = sum(row.count(2) for row in self.grid)
+        self.game_state.setup_level(actual_pacgums)
 
         # Reset wave timers
         self.is_scatter_wave = True
