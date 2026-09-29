@@ -2,7 +2,7 @@
 Manage all ghost bahaviour and modes.
 Uses Manhatten distance for distance calculation
 Blinky chases Pac-man directly.
-Pinky chases target cell 2 cells ahead of Pac-man.
+Pinky chases target cell 4 cells ahead of Pac-man.
 Inky chases target cell depending on the Blinky's pos.
 Clyde chases and retreats from Pac-man within 8 cell range.
 """
@@ -248,7 +248,7 @@ class Pinky(Ghost):
             blinky_x: int = 0,
             blinky_y: int = 0
     ) -> tuple[int, int]:
-        """Pinky targets 2 tiles ahead of Pacman's current direction."""
+        """Pinky targets 4 tiles ahead of Pacman's current direction."""
 
         # If Pacman has not moved, target his current direction
         if pacman_dir == Direction.NONE:
@@ -258,8 +258,8 @@ class Pinky(Ghost):
 
         # Multiply Pacman's direction vector by 4
         # to project the target forward by 4 cells
-        target_x = pacman_x + (dx * 2)
-        target_y = pacman_y + (dy * 2)
+        target_x = pacman_x + (dx * 4)
+        target_y = pacman_y + (dy * 4)
 
         return (target_x, target_y)
 
