@@ -18,9 +18,12 @@ from menu import Menu
 class Application:
     """Central app controller managing states and transitions."""
 
-    def __init__(self) -> None:
+    def __init__(self, config_path: str) -> None:
         self.render = Render()
         self.config = ConfigManager()
+
+        # Load config from argv
+        self.config.load(config_path)
 
         lvl_w = self.config.get("level")[0]["width"]
         lvl_h = self.config.get("level")[0]["height"]
@@ -35,8 +38,13 @@ class Application:
         self.highscores = HighScoreManager(self.config.get("highscore_filename"))
 
         # Setup Vokotera's Menu and Monkey-Patch the selections
-        self.menu = Menu(self.screen, self.config.get("points_per_pacgum"), self.config.get("points_per_super_pacgum"), self.config.get("pacgum"))
-        self.app_state = "MENU"  # MENU, PLAYING, GAME_OVER, HIGHSCORES
+        self.menu = Menu(self.screen)
+        self.app_state = "MENU"
+        # MENU, PLAYING, GAME_OVER, HIGHSCORES
+
+        # New state variables
+        self.pause_selected = 0
+        self.input_name = ""
 
         # Store the original menu activate method
         self._og_activate = self.menu._activate_item
@@ -44,7 +52,7 @@ class Application:
         def custom_activate(index: int) -> None:
             if index == 0:
                 self._start_new_game()
-            elif index == 2:
+            elif index == 1:
                 self.app_state = "HIGHSCORES"
             elif index == 3:
                 pygame.quit()
@@ -191,20 +199,26 @@ class Application:
                         pygame.quit()
                         sys.exit()
                     self.menu.handle_event(ev)
-                self.menu.draw_main_menu()
+                # Pass top 4 scores to the menu
+                top_4 = self.highscores.scores[:4]
+                self.menu.draw_main_menu(top_4)
                 pygame.display.flip()
 
             elif self.app_state == "PLAYING":
                 self._run_game_frame(dt)
 
-            elif self.app_state == "GAME_OVER":
-                self._run_game_over_screen()
+            elif self.app_state == "PAUSE":
+                self._run_pause_frame()
+
+            elif self.app_state == "NAME_INPUT":
+                self._run_name_input_screen()
 
             elif self.app_state == "HIGHSCORES":
                 self._run_highscore_screen()
 
     def _run_game_frame(self, dt: float) -> None:
         """Execute one frame of gameplay."""
+
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 pygame.quit()
@@ -218,9 +232,9 @@ class Application:
                     self.player.set_direction(Direction.LEFT)
                 elif ev.key in (pygame.K_d, pygame.K_RIGHT):
                     self.player.set_direction(Direction.RIGHT)
-                elif ev.key == pygame.K_ESCAPE:
-                    self.app_state = "MENU"
-                    self.menu.screen = self.render.screen
+                elif ev.key in (pygame.K_ESCAPE, pygame.K_p, pygame.K_SPACE):
+                    self.app_state = "PAUSE"
+                    self.pause_selected = 0
                     return
 
         # 1. Update State
@@ -232,8 +246,9 @@ class Application:
             self._load_level()
             return
         elif self.game_state.state in (State.GAME_OVER, State.VICTORY):
-            self.highscores.add_score("PLY", self.game_state.score)
-            self.app_state = "GAME_OVER"
+            # Transition to name input
+            self.input_name = ""
+            self.app_state = "NAME_INPUT"
             return
 
         self.player.update(dt, self.grid)
@@ -301,32 +316,53 @@ class Application:
 
         self.render.render_frame()
 
-    def _run_game_over_screen(self) -> None:
-        """Draw basic Game Over screen waiting for keypress."""
+    def _run_pause_frame(self) -> None:
+        """Draw basic pause screen waiting for keypress."""
+
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif ev.type == pygame.KEYDOWN:
-                self.app_state = "MENU"
-                self.screen = pygame.display.set_mode((800, 600))
+                if ev.key in (
+                    pygame.K_w, pygame.K_UP, pygame.K_s, pygame.K_DOWN):
+                    self.pause_selected = 1 - self.pause_selected
+                elif ev.key == pygame.K_SPACE:
+                    self.app_state = "PLAYING"
+                elif ev.key == pygame.K_RETURN:
+                    if self.pause_selected == 0:
+                        self.app_state = "PLAYING"
+                    else:
+                        self.app_state = "MENU"
 
-        self.screen.fill((0, 0, 0))
-        font = pygame.font.SysFont(None, 48)
+        self.render.draw_pause_menu(self.pause_selected)
+        self.render.render_frame()
 
-        if self.game_state.state == State.VICTORY:
-            msg = "VICTORY!"
-            color = (0, 255, 0)  # Green
-        else:
-            msg = "GAME OVER"
-            color = (255, 0, 0) # Red
+    def _run_name_input_screen(self) -> None:
+        """Manages text input for highscore submission."""
+        is_victory = self.game_state.state == State.VICTORY
 
-        text = font.render(f"{msg} - Score: {self.game_state.score}", True, color)
-        self.screen.blit(
-            text,
-            text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2))
+        for ev in pygame.event.get():
+            if ev.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif ev.type == pygame.KEYDOWN:
+                if ev.key == pygame.K_RETURN:
+                    self.highscores.add_score(
+                        self.input_name, self.game_state.score
+                    )
+                    self.app_state = "MENU"
+                    return
+                elif ev.key == pygame.K_BACKSPACE:
+                    self.input_name = self.input_name[:-1]
+                elif ev.unicode.isalnum() or ev.unicode == " ":
+                    if len(self.input_name) < 10:
+                        self.input_name += ev.unicode
+
+        self.render.draw_name_input(
+            self.input_name, self.game_state.score, is_victory
         )
-        pygame.display.flip()
+        self.render.render_frame()
 
     def _run_highscore_screen(self) -> None:
         """Draw Highscore leaderboard."""

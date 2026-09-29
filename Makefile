@@ -12,19 +12,19 @@ all: $(VENV_STAMP)
 $(VENV_STAMP): requirements.txt
 	test -d $(VENV_DIR) || $(PYTHON) -m venv $(VENV_DIR)
 	./$(VENV_DIR)/bin/$(PIP) install --upgrade pip
-	./$(VENV_DIR)/bin/$(PIP) install -r requirements.txt	
+	./$(VENV_DIR)/bin/$(PIP) install -r requirements.txt
 	@touch $(VENV_STAMP)
 
 install: $(VENV_STAMP)
 
 run: $(VENV_STAMP)
-	./$(VENV_DIR)/bin/python3 pac_man.py config.json
+	./$(VENV_DIR)/bin/python3 pac-man.py config.json
 
 debug: $(VENV_STAMP)
-	./$(VENV_DIR)/bin/python3 -m pdb pac_man.py config.json
+	./$(VENV_DIR)/bin/python3 -m pdb pac-man.py config.json
 
 clean:
-	rm -rf __pycache__ src/__pycache__ 
+	rm -rf __pycache__ src/__pycache__
 	rm -rf .mypy_cache $(VENV_STAMP)
 	find . -type d -name "__pycache__" -exec rm -rf {} + \
 		2>/dev/null || true

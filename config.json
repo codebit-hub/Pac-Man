@@ -18,14 +18,14 @@
 
     "game_mode": "game",
     "highscore_filename": "highscore.json",
-    "levels": 12,
+    "levels": 3,
     "level": [
         {"width": 15, "height": 15},
         {"width": 16, "height": 16},
         {"width": 17, "height": 17}
     ],
-    "lives": 2,
-    "pacgum": 2,
+    "lives": 3,
+    "pacgum": 1,
     "points_per_pacgum": 10,
     "points_per_super_pacgum": 50,
     "points_per_ghost": 200,

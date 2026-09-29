@@ -40,7 +40,7 @@ class Render:
         tile_h = (self.max_h - 50) // grid_h  # Reserve 50px for the HUD
 
         self.tile_size = min(tile_w, tile_h)
-        
+
         win_w = self.tile_size * grid_w
         win_h = (self.tile_size * grid_h) + 50  # Add HUD space to window
 
@@ -200,6 +200,58 @@ class Render:
         surf = self.font.render(hud_text, True, (255, 255, 255))
         self.screen.blit(surf, (20, self.screen.get_height() - 35))
 
+    def draw_pause_menu(self, selected: int) -> None:
+        """Draws a semi-transparent pause overlay and options."""
+
+        overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()))
+        overlay.set_alpha(150)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+
+        if not hasattr(self, 'font_large'):
+            self.font_large = pygame.font.SysFont(None, 48)
+            self.font_med = pygame.font.SysFont(None, 36)
+
+        cx = self.screen.get_width() // 2
+        cy = self.screen.get_height() // 2
+
+        title = self.font_large.render("PAUSED", True, (255, 255, 0))
+        self.screen.blit(title, title.get_rect(center=(cx, cy - 60)))
+
+        opt1_color = (0, 255, 255) if selected == 0 else (255, 255, 255)
+        opt2_color = (0, 255, 255) if selected == 1 else (255, 255, 255)
+
+        opt1 = self.font_med.render("Resume Game", True, opt1_color)
+        opt2 = self.font_med.render("Return to Main Menu", True, opt2_color)
+
+        self.screen.blit(opt1, opt1.get_rect(center=(cx, cy + 10)))
+        self.screen.blit(opt2, opt2.get_rect(center=(cx, cy + 50)))
+
+    def draw_name_input(self, name: str, score: int, is_victory: bool) -> None:
+        """Draw the post-game screen prompting for player name."""
+        self.screen.fill((0, 0, 0))
+
+        if not hasattr(self, 'font_large'):
+            self.font_large = pygame.font.SysFont(None, 48)
+            self.font_med = pygame.font.SysFont(None, 36)
+
+        cx = self.screen.get_width() // 2
+        cy = self.screen.get_height() // 2
+
+        msg = "VICTORY!" if is_victory else "GAME OVER"
+        color = (0, 255, 0) if is_victory else (255, 0, 0)
+
+        title = self.font_large.render(msg, True, color)
+        score_txt = self.font_med.render(f"Final Score: {score}", True, (255, 255, 255))
+        prompt = self.font_med.render("Enter Name (Max 10 chars):", True, (255, 255, 0))
+
+        # Name Input Box
+        name_txt = self.font_large.render(name + "_", True, (0, 255, 255))
+
+        self.screen.blit(title, title.get_rect(center=(cx, cy - 100)))
+        self.screen.blit(score_txt, score_txt.get_rect(center=(cx, cy - 40)))
+        self.screen.blit(prompt, prompt.get_rect(center=(cx, cy + 30)))
+        self.screen.blit(name_txt, name_txt.get_rect(center=(cx, cy + 80)))
 
 
 if __name__ == "__main__":
