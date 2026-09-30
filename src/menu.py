@@ -114,11 +114,13 @@ class Menu:
                 self.anime_x = start_x # Keep it exactly at start_x when it finishes
 
             # Draw only once per frame at the current position
-            self.screen.blit(clyde, (self.anime_x, y_pos))
-            self.screen.blit(blinky, (self.anime_x + 38, y_pos))
-            self.screen.blit(pinky, (self.anime_x + 76, y_pos))
-            self.screen.blit(inky, (self.anime_x + 114, y_pos))
-            self.screen.blit(pacman, (self.anime_x + 152, y_pos))
+            pygame.draw.circle(self.screen, (255,255,255), [self.anime_x, y_pos + 15], 5)
+            pygame.draw.circle(self.screen, (255,255,255), [self.anime_x + 38, y_pos + 15], 5)
+            self.screen.blit(pacman, (self.anime_x + 76, y_pos))
+            self.screen.blit(clyde, (self.anime_x + 114, y_pos))
+            self.screen.blit(blinky, (self.anime_x + 152, y_pos))
+            self.screen.blit(pinky, (self.anime_x + 190, y_pos))
+            self.screen.blit(inky, (self.anime_x + 228, y_pos))
 
             # Keep _instruction_rect for backward compat
             self._instruction_rect = self._menu_rects[1]
@@ -128,7 +130,6 @@ class Menu:
             cy = self.screen.get_height() // 2
 
             # --- Panel ---
-            # Panel scales with window, capped at 550x500
             panel_w = min(int(self.screen.get_width() * 0.82), 600)
             panel_h = min(int(self.screen.get_height() * 0.82), 400)
             bg_rect = pygame.Rect(0, 0, panel_w, panel_h)
@@ -140,9 +141,7 @@ class Menu:
             pacman_txt = self.font_inst_regular.render("avoids", True, (255,255,255))
             self.screen.blit(ins_title, ins_title.get_rect(center=(cx, bg_rect.top + 50)))
 
-            # X close button in top-right corner of panel
             close_margin = 15
-            # Vykreslíme X větším fontem nanečisto, abychom získali přesnou velikost pro hitbox
             dummy_surf = self.font_inst_title.render("X", True, (255, 255, 255))
             self._close_rect = dummy_surf.get_rect(topright=(bg_rect.right - close_margin, bg_rect.top + close_margin))
             
