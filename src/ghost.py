@@ -1,7 +1,15 @@
+"""
+Manage all ghost bahaviour and modes.
+Uses Manhatten distance for distance calculation
+Blinky chases Pac-man directly.
+Pinky chases target cell 4 cells ahead of Pac-man.
+Inky chases target cell depending on the Blinky's pos.
+Clyde chases and retreats from Pac-man within 8 cell range.
+"""
+
 from enum import Enum
 import os
 import sys
-# Use pacman's direction of movement cost
 from player import Direction
 
 
@@ -56,23 +64,23 @@ class Ghost:
         self.grid_x = -1
         self.grid_y = -1
 
+    def get_target_tile(
+        self,
+        pacman_x: int,
+        pacman_y: int,
+        pacman_dir: Direction,
+        blinky_x: int = 0,
+        blinky_y: int = 0
+    ) -> tuple[int, int]:
+        """Calc the ghost's target tile. Overridden by child class"""
+
+        return (0, 0)
+
     def reverse_direction(self) -> None:
         """Reverses ghost direction"""
 
         if self.current_dir != Direction.NONE:
             self.current_dir = self._get_opposite_dir(self.current_dir)
-
-    def get_target_tile(
-            self,
-            pacman_x: int,
-            pacman_y: int,
-            pacman_dir: Direction,
-            blinky_x: int = 0,
-            blinky_y: int = 0
-    ) -> tuple[int, int]:
-        """Calc the ghost's target tile. Overridden by child class"""
-
-        return (0, 0)
 
     def _get_opposite_dir(self, direction: Direction) -> Direction:
         """Returns 180 opposite direction"""

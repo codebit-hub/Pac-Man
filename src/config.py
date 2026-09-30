@@ -44,7 +44,10 @@ class ConfigManager:
                     stripped = line.strip()
                     if not (stripped.startswith('#')
                             or stripped.startswith('"#')
-                            or stripped.startswith("'#")):
+                            or stripped.startswith("'#")
+                            or stripped.startswith('//')
+                            or stripped.startswith('"//')
+                            or stripped.startswith("'//")):
                         raw_lines.append(line)
 
         except (FileNotFoundError, OSError) as err:
@@ -90,15 +93,21 @@ class ConfigManager:
 
             expected_type = type(self._defaults[key])
 
-            if not isinstance(value, expected_type):
+            if (
+                not isinstance(value, expected_type)
+                or (expected_type is int and isinstance(value, bool))
+            ):
                 print(f"Warning: '{key}' needs {expected_type.__name__}. "
                       "Clamping.")
                 continue
 
             # Reset invalid values to safe defaults
-            if key == "game_mode" and value not in ("game", "evaluation"):
-                print("Warning: invalid game_mode. Reset to 'game'.")
-                self._config["game_mode"] = "game"
+            if key == "game_mode":
+                if value not in ("game", "evaluation"):
+                    print("Warning: invalid game_mode. Reset to 'game'.")
+                    self._config["game_mode"] = "game"
+                elif value in ("game", "evaluation"):
+                    self._config["game_mode"] = value
 
             elif key == "highscore_filename":
                 val_str = str(value).strip()
@@ -106,10 +115,10 @@ class ConfigManager:
                 # OS forbidden characters for file names
                 forbidden = '<>:"/\\|?*'
 
-                # Check for empty, length <256, forbidden chars
+                # Check for empty, length < 100, forbidden chars
                 if (
                     not val_str
-                    or len(val_str) > 255
+                    or len(val_str) > 100
                     or any(char in forbidden for char in val_str)
                 ):
                     print("Warning: invalid highscore filename. "
@@ -123,27 +132,39 @@ class ConfigManager:
                 if value <= 0:
                     print("Warning: 'levels' must be > 0. Reset to default.")
                     self._config["levels"] = 12
+                elif not (1 <= value <= 100):
+                    print("Warning: 'levels' exceed 100. Reset to default.")
+                    self._config["levels"] = 12
                 else:
                     self._config["levels"] = value
 
             elif key == "level":
                 self._config["level"] = self._validate_level(value)
 
-            elif key == "lives" and value <= 0:
-                print("Warning: 'lives' must be > 0. Reset to 3.")
-                self._config["lives"] = 3
+            elif key == "lives":
+                if value <= 0:
+                    print("Warning: 'lives' must be > 0. Reset to 3.")
+                    self._config["lives"] = 3
+                elif not (1 <= value <= 100):
+                    print("Warning: 'lives' must be < 100. Reset to 3.")
+                    self._config["lives"] = 3
+                else:
+                    self._config["lives"] = value
 
             elif key == "pacgum" and value < 0:
                 print("Warning: 'pacgum' must be > 0. Reset to default.")
                 self._config["pacgum"] = self._defaults["pacgum"]
 
-            elif key.startswith("points_") and value < 0:
-                print(f"Warning: '{key}' cannot be < 0. Reset to default.")
+            elif key.startswith("points_") and (value < 0 or value > 1000):
+                print(f"Warning: '{key}' is < 0 or > 1000. Reset to default.")
                 self._config[key] = self._defaults[key]
 
-            elif key == "level_max_time" and value <= 0:
-                print("Warning: 'level_max_time' > 0. Reset to 90.")
-                self._config["level_max_time"] = 90
+            elif key == "level_max_time":
+                if value <= 0:
+                    print("Warning: 'level_max_time' < 0. Reset to 90.")
+                    self._config["level_max_time"] = 90
+                else:
+                    self._config["level_max_time"] = value
 
             elif key == "ghost_behavior_random":
                 self._config["ghost_behavior_random"] = value
@@ -170,7 +191,11 @@ class ConfigManager:
                 w = lvl["width"]
                 # Ensuring dimensions are integers and correctly sized
                 # not (17 <= w <= 35):
-                if not isinstance(w, int) or not (15 <= w <= 35):
+                if (
+                    not isinstance(w, int)
+                    or isinstance(w, bool)
+                    or not (15 <= w <= 35)
+                ):
                     print(f"Incorrect width dimensions for Level {i}. "
                           "Clamping.")
                     w = 15
@@ -181,7 +206,11 @@ class ConfigManager:
                 h = 15
             else:
                 h = lvl["height"]
-                if not isinstance(h, int) or not (15 <= h <= 35):
+                if (
+                    not isinstance(h, int)
+                    or isinstance(h, bool)
+                    or not (15 <= h <= 35)
+                ):
                     print(f"Incorrect height dimensions for Level {i}. "
                           "Clamping.")
                     h = 15
@@ -236,4 +265,3 @@ if __name__ == "__main__":
     print(f"levels len: {len(lvls)}.")
     print(f"\n{cfg._config}")
     print("[+] All configuration checks passed.")
-

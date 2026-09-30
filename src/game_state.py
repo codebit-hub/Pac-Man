@@ -1,3 +1,8 @@
+"""
+Manages game states, transitions and stats.
+Tracks game stats and triggers Level transition, Game Over, Victory
+"""
+
 from enum import Enum
 from typing import Any
 

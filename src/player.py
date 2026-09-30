@@ -1,3 +1,9 @@
+"""
+Manages Pac-man's spawning and behaviour
+Performs his respawning, sets directions, checks walkability.
+Updates his grid position based on attempted move.
+"""
+
 from enum import Enum
 
 

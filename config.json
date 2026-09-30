@@ -1,18 +1,32 @@
 {
     # Central Game Configuration File
-    #: "The are two game modes: game and evaluation,
-    "#": Comments work when they start with # or '#'
-    '#': "Ghost behaviour random changes spawning and color"
+    "#" = "Comments work when they start with # or '#'"
+    '#' = "There two game modes: game and evaluation".
+    // Highscore name shouldn't exceed 100 symbols
+    #" 'Levels' valid range: 1 <= value <= 100,
+    # 'Level' key provides level dimensions.
+    '//' Specify custom level dimensions.
+    // Accepted dimensions range per axis: 15-35
+    // Default: 15x15.
+    // 'lives' limited to 100
+    // pacgums limited to available empty corridors.
+    "//" Points values can't be negative or > 1000.
+    # seed: 1st level - fixed, other levels - random.
+    # level duration 'level_max_time' (sec) must be greater than 0.
+    // Ghost behaviour randomization: spawning and color.
     # Any message: l;kasd4039(*&*(^^*&%*%^*%(**(
+
     "game_mode": "game",
     "highscore_filename": "highscore.json",
-    "levels": 12,
+    "levels": 3,
     "level": [
-        {"width": 15, "height": 15}
+        {"width": 15, "height": 15},
+        {"width": 16, "height": 16},
+        {"width": 17, "height": 17}
     ],
-    "lives": 1,
-    "pacgum": 2,
-    "points_per_pacgum": 20,
+    "lives": 3,
+    "pacgum": 1,
+    "points_per_pacgum": 10,
     "points_per_super_pacgum": 50,
     "points_per_ghost": 200,
     "seed": 42,
