@@ -75,14 +75,13 @@ class Menu:
 
         if self.state == "main":
             NORMAL_COLOR  = (255, 255, 255)
-            SELECTED_COLOR = (253, 255, 0)
+            SELECTED_COLOR = (70,191,238)
             EXIT_COLOR = (208, 62, 25)
 
             labels = [
-                "1. Start Game",
-                "2. View Highscores",
-                "3. Instructions",
-                "4. Exit"
+                "View Highscores",
+                "Instructions",
+                "Exit"
             ]
 
             cx = self.screen.get_width() // 2
@@ -90,12 +89,19 @@ class Menu:
 
             # 1. Draw Title
             title = self.font_title.render("Pac-Man", True, (253, 255, 0))
-            self.screen.blit(title, title.get_rect(center=(cx, cy - 200)))
+            play_txt = self.font_inst_title.render("Push SPACE for play", True, (255, 255, 255))
+            self.screen.blit(title, title.get_rect(center=(cx - 20, cy - 200)))
+            current_time = pygame.time.get_ticks()
+            pulse = (math.sin(current_time * 0.005) + 1) / 2
+            alpha = int(100 + 155 * pulse)
+            play_txt.set_alpha(alpha)
+            self.screen.blit(play_txt,title.get_rect(center=(cx - 5, cy - 100)))
+
 
             # 2. Draw Menu Items & Pointer
             self._menu_rects = []
             for i, label in enumerate(labels):
-                if i == 3 and i == self.selected_item:
+                if i == 2 and i == self.selected_item:
                     color = EXIT_COLOR
                 elif i == self.selected_item:
                     color = SELECTED_COLOR
@@ -103,7 +109,7 @@ class Menu:
                     color = NORMAL_COLOR
 
                 surf = self.font_regular.render(label, True, color)
-                rect = surf.get_rect(center=(cx, cy - 80 + (i * 45)))
+                rect = surf.get_rect(center=(cx, cy - 30 + (i * 45)))
                 self._menu_rects.append(rect)
                 self.screen.blit(surf, rect)
 
@@ -154,7 +160,7 @@ class Menu:
             panel_h = min(int(self.screen.get_height() * 0.82), 420)
             bg_rect = pygame.Rect(0, 0, panel_w, panel_h)
             bg_rect.center = (cx, cy)
-            pygame.draw.rect(self.screen, (0, 23, 68), bg_rect)
+            pygame.draw.rect(self.screen, (70,191,238), bg_rect)
 
             ins_title = self.font_inst_title.render("Instructions", True, (255,255,255))
             blink_ghost_white = get_sp(10, 4)
@@ -239,7 +245,7 @@ class Menu:
 
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle keyboard and mouse input for menu navigation."""
-        NUM_ITEMS = 4
+        NUM_ITEMS = 3
 
         if self.state == "main":
             if event.type == pygame.KEYDOWN:
@@ -248,16 +254,14 @@ class Menu:
                 elif event.key in (pygame.K_UP, pygame.K_w):
                     self.selected_item = (self.selected_item - 1) % NUM_ITEMS
                 elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
-                    self._activate_item(self.selected_item)
+                    self._activate_item(self.selected_item + 1)
                 elif event.key == pygame.K_SPACE:
                     self._activate_item(0)
                 elif event.key == pygame.K_1:
-                    self._activate_item(0)
-                elif event.key == pygame.K_2:
                     self._activate_item(1)
-                elif event.key == pygame.K_3:
+                elif event.key == pygame.K_2:
                     self._activate_item(2)
-                elif event.key == pygame.K_4:
+                elif event.key == pygame.K_3:
                     self._activate_item(3)
             elif event.type == pygame.MOUSEMOTION:
                 for i, rect in enumerate(self._menu_rects):
@@ -267,7 +271,7 @@ class Menu:
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 for i, rect in enumerate(self._menu_rects):
                     if rect.collidepoint(event.pos):
-                        self._activate_item(i)
+                        self._activate_item(i + 1)
                         break
 
         elif self.state == "instructions":

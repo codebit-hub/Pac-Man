@@ -33,19 +33,46 @@ class Render:
         self.anim_timer: float = 0.0
         self.ANIM_SPEED: float = 0.1  # seconds per frame
         self.last_dir: Direction = Direction.RIGHT  # fallback facing direction
+        
+        self.grid_w: int = 0
+        self.grid_h: int = 0
+        self.offset_x: int = 0
+        self.offset_y: int = 0
 
     def setup_display(self, grid_w: int, grid_h: int) -> None:
-        """Calculate tile size and create the Pygame window with HUD space."""
+        """Initialize display with grid dimensions."""
+        self.grid_w = grid_w
+        self.grid_h = grid_h
+        
+        # Calculate initial tight-fitting window size
         tile_w = self.max_w // grid_w
-        tile_h = (self.max_h - 50) // grid_h  # Reserve 50px for the HUD
-
-        self.tile_size = min(tile_w, tile_h)
-
-        win_w = self.tile_size * grid_w
-        win_h = (self.tile_size * grid_h) + 50  # Add HUD space to window
-
-        self.screen = pygame.display.set_mode((win_w, win_h))
+        tile_h = (self.max_h - 50) // grid_h
+        ts = max(1, min(tile_w, tile_h))
+        
+        win_w = ts * grid_w
+        win_h = (ts * grid_h) + 50
+        
+        # Initial sizing
+        self.resize(win_w, win_h)
         pygame.display.set_caption("Pac-Man")
+
+    def resize(self, window_w: int, window_h: int) -> None:
+        """Recalculate tile size and center offsets upon resize."""
+        self.max_w = window_w
+        self.max_h = window_h
+        self.screen = pygame.display.set_mode((window_w, window_h), pygame.RESIZABLE)
+        
+        if self.grid_w > 0 and self.grid_h > 0:
+            tile_w = window_w // self.grid_w
+            tile_h = (window_h - 50) // self.grid_h  # Reserve 50px for HUD
+            self.tile_size = max(1, min(tile_w, tile_h))
+            
+            maze_w = self.tile_size * self.grid_w
+            maze_h = self.tile_size * self.grid_h
+            
+            # Center the maze
+            self.offset_x = (window_w - maze_w) // 2
+            self.offset_y = (window_h - 50 - maze_h) // 2
 
     def load_spritesheet(self, filepath: str) -> None:
         """Safely load the spritesheet or fallback to basic shapes."""
@@ -64,7 +91,10 @@ class Render:
         offset_x = 1
         offset_y = -0.3
         rect = pygame.Rect((col * base) + offset_x, (row * base) + offset_y, base * 2, base * 2)
-        surf = cast(pygame.Surface, self.sheet.subsurface(rect))
+        try:
+            surf = cast(pygame.Surface, self.sheet.subsurface(rect))
+        except ValueError:
+            return None
         scaled = pygame.transform.scale(surf, (self.tile_size, self.tile_size))
         scaled.set_colorkey((255, 0, 255))
         return scaled
@@ -76,22 +106,51 @@ class Render:
             "Pink": self.get_sprite(2, 4),
             "Cyan": self.get_sprite(4, 4),
             "Orange": self.get_sprite(6, 4),
-            "Flee": self.get_sprite(8, 4),
-            "Flash": self.get_sprite(10, 4),
-            "Eyes": self.get_sprite(12, 4)
+            "Flee": self.get_sprite(10, 4),     # Blue ghost is on row 5
+            "Flash": self.get_sprite(10, 6),   # White ghost is on row 5
         }
 
     def draw_wall(self, x: int, y: int, is_logo: bool = False) -> None:
-        """Draw continuous solid arcade walls."""
+        """Draw dark fill for wall tile. Borders drawn by draw_walls_grid."""
         if not self.screen:
             return
+        fill = (70,191,238) if is_logo else (0,0,0)
+        px = x * self.tile_size + self.offset_x
+        py = y * self.tile_size + self.offset_y
+        pygame.draw.rect(self.screen, fill, pygame.Rect(
+            px, py, self.tile_size, self.tile_size
+        ))
 
-        rect = pygame.Rect(
-            x * self.tile_size, y * self.tile_size,
-            self.tile_size, self.tile_size
-        )
-        color = (50, 100, 255) if is_logo else (0, 0, 200)
-        pygame.draw.rect(self.screen, color, rect)
+    def draw_walls_grid(self, grid: list) -> None:
+        """Draw wall borders only on edges that face a corridor (not wall-to-wall)."""
+        if not self.screen:
+            return
+        WALL_VALS = {0, 4}
+        rows = len(grid)
+        cols = len(grid[0]) if rows else 0
+        ts = self.tile_size
+        lw = max(1, ts // 5)
+
+        def is_wall(gx, gy):
+            if gx < 0 or gy < 0 or gy >= rows or gx >= cols:
+                return True
+            return grid[gy][gx] in WALL_VALS
+
+        for gy, row in enumerate(grid):
+            for gx, cell in enumerate(row):
+                if cell not in WALL_VALS:
+                    continue
+                color = (50, 100, 255) if cell == 4 else (70,191,238)
+                px = gx * ts + self.offset_x
+                py = gy * ts + self.offset_y
+                if not is_wall(gx, gy - 1):  # top
+                    pygame.draw.line(self.screen, color, (px, py), (px + ts, py), lw)
+                if not is_wall(gx, gy + 1):  # bottom
+                    pygame.draw.line(self.screen, color, (px, py + ts), (px + ts, py + ts), lw)
+                if not is_wall(gx - 1, gy):  # left
+                    pygame.draw.line(self.screen, color, (px, py), (px, py + ts), lw)
+                if not is_wall(gx + 1, gy):  # right
+                    pygame.draw.line(self.screen, color, (px + ts, py), (px + ts, py + ts), lw)
 
     def load_dot(self, filepath: str) -> None:
         """Load the pacgum dot sprite, or set to None for fallback drawing."""
@@ -124,8 +183,8 @@ class Render:
 
     def draw_pacgum(self, x: int, y: int) -> None:
         """Draw a pacgum (small dot) at grid position (x, y)."""
-        px = x * self.tile_size
-        py = y * self.tile_size
+        px = x * self.tile_size + self.offset_x
+        py = y * self.tile_size + self.offset_y
         if self.dot_img:
             self.screen.blit(self.dot_img, (px, py))
         else:
@@ -139,14 +198,14 @@ class Render:
         self._powergum_tick += 1
         pulse = 0.5 + 0.3 * math.sin(self._powergum_tick * 0.05)
         r = max(3, int(self.tile_size * pulse * 0.5))
-        cx = x * self.tile_size + self.tile_size // 2
-        cy = y * self.tile_size + self.tile_size // 2
+        cx = x * self.tile_size + self.offset_x + self.tile_size // 2
+        cy = y * self.tile_size + self.offset_y + self.tile_size // 2
         pygame.draw.circle(self.screen, (255, 255, 255), (cx, cy), r)
 
     def draw_player(self, grid_x: int, grid_y: int, direction: Direction, delta_time: float) -> None:
         """Draw pacman at grid position with directional animation."""
-        px = grid_x * self.tile_size
-        py = grid_y * self.tile_size
+        px = grid_x * self.tile_size + self.offset_x
+        py = grid_y * self.tile_size + self.offset_y
 
         # Advance animation timer
         self.anim_timer += delta_time
@@ -169,17 +228,15 @@ class Render:
         self, x: int, y: int, color: str, state_val: int, f_timer: float
     ) -> None:
         """Draw ghost with basic bobbing animation based on state."""
-        px = x * self.tile_size
-        py = y * self.tile_size
+        px = x * self.tile_size + self.offset_x
+        py = y * self.tile_size + self.offset_y
 
         # Simple bobbing animation using the global tick
         offset_y = 2 if self.anim_frame % 2 == 0 else 0
 
         # State 3 is FLEE, State 4 is EATEN
-        if state_val == 4:
-            sprite = self.ghost_sprites.get("Eyes")
-        elif state_val == 3:
-            # Flash white if timer is running out (< 2 seconds)
+        if state_val == 3:
+            # Flashes between Flee (blue) and Flash (white) only when timer < 2.0s
             if f_timer < 2.0 and self.anim_frame % 2 == 0:
                 sprite = self.ghost_sprites.get("Flash")
             else:
