@@ -198,6 +198,8 @@ class Application:
                     if ev.type == pygame.QUIT:
                         pygame.quit()
                         sys.exit()
+                    elif ev.type == pygame.VIDEORESIZE:
+                        self.render.resize(ev.w, ev.h)
                     self.menu.handle_event(ev)
                 # Pass top 4 scores to the menu
                 top_4 = self.highscores.scores[:4]
@@ -223,6 +225,8 @@ class Application:
             if ev.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            elif ev.type == pygame.VIDEORESIZE:
+                self.render.resize(ev.w, ev.h)
             elif ev.type == pygame.KEYDOWN:
                 if ev.key in (pygame.K_w, pygame.K_UP):
                     self.player.set_direction(Direction.UP)
@@ -292,6 +296,7 @@ class Application:
                     self.render.draw_pacgum(x, y)
                 elif cell == 3:
                     self.render.draw_powergum(x, y)
+        self.render.draw_walls_grid(self.grid)
 
         self.render.draw_player(
             self.player.grid_x, self.player.grid_y, self.player.current_dir, dt
@@ -323,6 +328,8 @@ class Application:
             if ev.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            elif ev.type == pygame.VIDEORESIZE:
+                self.render.resize(ev.w, ev.h)
             elif ev.type == pygame.KEYDOWN:
                 if ev.key in (
                     pygame.K_w, pygame.K_UP, pygame.K_s, pygame.K_DOWN):
@@ -346,6 +353,8 @@ class Application:
             if ev.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            elif ev.type == pygame.VIDEORESIZE:
+                self.render.resize(ev.w, ev.h)
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_RETURN:
                     self.highscores.add_score(
@@ -370,6 +379,8 @@ class Application:
             if ev.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            elif ev.type == pygame.VIDEORESIZE:
+                self.render.resize(ev.w, ev.h)
             elif ev.type == pygame.KEYDOWN:
                 self.app_state = "MENU"
 
