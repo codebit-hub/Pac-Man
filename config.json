@@ -6,7 +6,7 @@
     #" 'Levels' valid range: 1 <= value <= 100,
     # 'Level' key provides level dimensions.
     '//' Specify custom level dimensions.
-    // Accepted dimensions range per axis: 15-35
+    // Accepted dimensions range per axis: 15-30
     // Default: 15x15.
     // 'lives' limited to 100
     // pacgums limited to available empty corridors.
