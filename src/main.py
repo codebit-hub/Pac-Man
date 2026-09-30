@@ -114,6 +114,7 @@ class Application:
         self.render.load_player_frames(os.path.normpath(
             os.path.join(base, "..", "Sprites", "pacman-art")))
         self.render.load_ghost_sprites()
+        self.render.load_pacman_death()
 
         # Place into the game only the available pacgums based on empty corridors
         actual_pacgums = sum(row.count(2) for row in self.grid)
@@ -157,6 +158,33 @@ class Application:
         # Apply shuffled colors to ghosts
         for i, ghost in enumerate(self.ghosts):
             ghost.color_name = colors[i]
+
+    def _play_death_anim(self, grid_x: int, grid_y: int) -> None:
+        """Play Pac-Man death animation before respawn."""
+        frames = self.render.pacman_death.get("frames", [])
+        if not frames:
+            pygame.time.wait(600)
+            return
+        clock = pygame.time.Clock()
+        for frame_idx in range(len(frames)):
+            for ev in pygame.event.get():
+                if ev.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys; sys.exit()
+            self.render.screen.fill((0, 0, 0))
+            for gy, row in enumerate(self.grid):
+                for gx, cell in enumerate(row):
+                    if cell in (0, 4):
+                        self.render.draw_wall(gx, gy, is_logo=(cell == 4))
+                    elif cell == 2:
+                        self.render.draw_pacgum(gx, gy)
+                    elif cell == 3:
+                        self.render.draw_powergum(gx, gy)
+            self.render.draw_walls_grid(self.grid)
+            self.render.draw_pacman_death(grid_x, grid_y, frame_idx)
+            self.render.render_frame()
+            clock.tick(12)
+        pygame.time.wait(400)
 
     def _update_wave_timers(self, delta_time: float) -> None:
         """Manage Scatter/Chase and Flee modes from GameState."""
@@ -280,6 +308,7 @@ class Application:
                 elif g.state in (GhostState.CHASE, GhostState.SCATTER):
                     self.game_state.lose_life()
                     if self.game_state.state != State.GAME_OVER:
+                        self._play_death_anim(px, py)
                         self.player.respawn()
                         self._init_ghosts()
                     return

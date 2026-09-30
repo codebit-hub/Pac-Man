@@ -33,6 +33,7 @@ class Render:
         self.anim_timer: float = 0.0
         self.ANIM_SPEED: float = 0.1  # seconds per frame
         self.last_dir: Direction = Direction.RIGHT  # fallback facing direction
+        self.pacman_death: dict = {}
         
         self.grid_w: int = 0
         self.grid_h: int = 0
@@ -109,6 +110,18 @@ class Render:
             "Flee": self.get_sprite(10, 4),     # Blue ghost is on row 5
             "Flash": self.get_sprite(10, 6),   # White ghost is on row 5
         }
+
+    def load_pacman_death(self) -> None:
+        """Load Pac-Man death animation frames from spritesheet row 7, cols 0,2,4,..."""
+        frames = []
+        col = 0
+        while True:
+            frame = self.get_sprite(col * 2, 12)
+            if frame is None:
+                break
+            frames.append(frame)
+            col += 1
+        self.pacman_death["frames"] = frames
 
     def draw_wall(self, x: int, y: int, is_logo: bool = False) -> None:
         """Draw dark fill for wall tile. Borders drawn by draw_walls_grid."""
@@ -219,6 +232,16 @@ class Render:
         frames = self.player_frames.get(self.last_dir) or self.player_frames.get(Direction.RIGHT)
         if frames:
             self.screen.blit(frames[self.anim_frame], (px, py))
+    
+    def draw_pacman_death(self, grid_x: int, grid_y: int, frame_idx: int) -> None:
+        """Draw one frame of the Pac-Man death animation."""
+        frames = self.pacman_death.get("frames", [])
+        if not frames:
+            return
+        frame_idx = max(0, min(frame_idx, len(frames) - 1))
+        px = grid_x * self.tile_size + self.offset_x
+        py = grid_y * self.tile_size + self.offset_y
+        self.screen.blit(frames[frame_idx], (px, py))
 
     def render_frame(self) -> None:
         """Flip the display buffer to the monitor."""
