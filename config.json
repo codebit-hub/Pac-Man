@@ -6,7 +6,7 @@
     #" 'Levels' valid range: 1 <= value <= 100,
     # 'Level' key provides level dimensions.
     '//' Specify custom level dimensions.
-    // Accepted dimensions range per axis: 15-35
+    // Accepted dimensions range per axis: 15-30
     // Default: 15x15.
     // 'lives' limited to 100
     // pacgums limited to available empty corridors.
@@ -18,7 +18,7 @@
 
     "game_mode": "game",
     "highscore_filename": "highscore.json",
-    "levels": 3,
+    "levels": 1,
     "level": [
         {"width": 15, "height": 15},
         {"width": 16, "height": 16},

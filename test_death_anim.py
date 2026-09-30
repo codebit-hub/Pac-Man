@@ -1,7 +1,7 @@
 import pygame
 
 pygame.init()
-sheet = pygame.image.load("Sprites/2-Sprites/spritesheet.png")
+sheet = pygame.image.load("Assets/main-assetsheets/main-assetsheet.png")
 
 for row in range(14):
     for col in range(22):

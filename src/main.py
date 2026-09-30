@@ -108,11 +108,11 @@ class Application:
 
         base = os.path.dirname(__file__)
         self.render.load_spritesheet(os.path.normpath(
-            os.path.join(base, "..", "Sprites", "2-Sprites", "spritesheet.png")))
+            os.path.join(base, "..", "assets", "spritesheets", "main-spritesheet.png")))
         self.render.load_dot(os.path.normpath(
-            os.path.join(base, "..", "Sprites", "pacman-art", "other", "dot.png")))
+            os.path.join(base, "..", "assets", "others", "dot.png")))
         self.render.load_player_frames(os.path.normpath(
-            os.path.join(base, "..", "Sprites", "pacman-art")))
+            os.path.join(base, "..", "assets", "pacman")))
         self.render.load_ghost_sprites()
         self.render.load_pacman_death()
 
@@ -264,7 +264,7 @@ class Application:
                     self.player.set_direction(Direction.LEFT)
                 elif ev.key in (pygame.K_d, pygame.K_RIGHT):
                     self.player.set_direction(Direction.RIGHT)
-                elif ev.key in (pygame.K_ESCAPE, pygame.K_p, pygame.K_SPACE):
+                elif ev.key in (pygame.K_p, pygame.K_SPACE):
                     self.app_state = "PAUSE"
                     self.pause_selected = 0
                     return
@@ -360,16 +360,31 @@ class Application:
             elif ev.type == pygame.VIDEORESIZE:
                 self.render.resize(ev.w, ev.h)
             elif ev.type == pygame.KEYDOWN:
-                if ev.key in (
-                    pygame.K_w, pygame.K_UP, pygame.K_s, pygame.K_DOWN):
+                if ev.key in (pygame.K_w, pygame.K_UP, pygame.K_s, pygame.K_DOWN):
                     self.pause_selected = 1 - self.pause_selected
                 elif ev.key == pygame.K_SPACE:
                     self.app_state = "PLAYING"
-                elif ev.key == pygame.K_RETURN:
+                elif ev.key in (pygame.K_RETURN, pygame.K_p):
                     if self.pause_selected == 0:
                         self.app_state = "PLAYING"
                     else:
                         self.app_state = "MENU"
+            elif ev.type == pygame.MOUSEMOTION:
+                mouse_pos = ev.pos
+                if hasattr(self.render, '_menu_rects'):
+                    for i, rect in enumerate(self.render._menu_rects):
+                        if rect.collidepoint(mouse_pos):
+                            self.pause_selected = i
+            elif ev.type == pygame.MOUSEBUTTONDOWN:
+                if ev.button == 1 and hasattr(self.render, '_menu_rects'):
+                    mouse_pos = ev.pos
+                    for i, rect in enumerate(self.render._menu_rects):
+                        if rect.collidepoint(mouse_pos):
+                            self.pause_selected = i
+                            if self.pause_selected == 0:
+                                self.app_state = "PLAYING"
+                            else:
+                                self.app_state = "MENU"
 
         self.render.draw_pause_menu(self.pause_selected)
         self.render.render_frame()

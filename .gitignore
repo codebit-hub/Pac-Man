@@ -1,6 +1,8 @@
 # Custom files
 .install_stamp
 highscore.json
+config.json
+.gitignore
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

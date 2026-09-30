@@ -19,14 +19,14 @@ class Menu:
         self.anime_x: int = 1000
 
         self.renderer = Render()
-        spritesheet_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "Sprites", "2-Sprites", "spritesheet.png"))
-        self.renderer.load_spritesheet(spritesheet_path)
+        main_spritesheet = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "assets", "spritesheets", "main-spritesheet.png"))
+        self.renderer.load_spritesheet(main_spritesheet)
 
         self.last_anim_time = pygame.time.get_ticks()
         self.anim_frame = 0
 
         self.pacman_frames = []
-        pacman_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "Sprites", "pacman-art", "pacman-left"))
+        pacman_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "assets", "pacman", "pacman-left"))
         for i in range(1, 4):
             path = os.path.join(pacman_dir, f"{i}.png")
             try:
@@ -36,19 +36,22 @@ class Menu:
                 pass
 
         try:
-            _font_path = os.path.join(os.path.dirname(__file__), "..", "emulogic-font", "Emulogic-zrEw.ttf")
+            _font_path = os.path.join(os.path.dirname(__file__), "..", "assets", "main-font", "Emulogic-zrEw.ttf")
             self.font_regular = pygame.font.Font(os.path.normpath(_font_path), 16)
             self.font_title = pygame.font.Font(os.path.normpath(_font_path), 48)
             self.font_inst_title = pygame.font.Font(os.path.normpath(_font_path), 16)
             self.font_inst_regular = pygame.font.Font(os.path.normpath(_font_path), 12)
         except (pygame.error, FileNotFoundError) as err:
             print("Warning: Custom font missing. Using default.")
-            self.font = pygame.font.SysFont(None, 36)
+            self.font_regular = pygame.font.SysFont(None, 24)
+            self.font_title = pygame.font.SysFont(None, 64)
+            self.font_inst_title = pygame.font.SysFont(None, 24)
+            self.font_inst_regular = pygame.font.SysFont(None, 18)
 
     def draw_main_menu(self, top_scores: list = None) -> None:
         self.screen.fill((0, 0, 0))
 
-        # Helper function for getting sprites (used by both states)
+        # Helper function for getting assets (used by both states)
         def get_sp(x: int, y: int):
             surf = self.renderer.get_sprite(x, y)
             if surf:

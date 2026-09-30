@@ -13,7 +13,7 @@ class Render:
         pygame.init()
         try:
             pacman_icon = os.path.normpath(os.path.join(
-            os.path.dirname(__file__), "..", "Sprites", "pacman-art", "pacman-right", "1.png"
+            os.path.dirname(__file__), "..", "assets", "pacman", "pacman-right", "1.png"
             ))
             loaded_img = pygame.image.load(pacman_icon)
             orig_w, orig_h = loaded_img.get_size()
@@ -34,11 +34,25 @@ class Render:
         self.ANIM_SPEED: float = 0.1  # seconds per frame
         self.last_dir: Direction = Direction.RIGHT  # fallback facing direction
         self.pacman_death: dict = {}
+        self.selected_item = 0
         
         self.grid_w: int = 0
         self.grid_h: int = 0
         self.offset_x: int = 0
         self.offset_y: int = 0
+
+        try:
+            _font_path = os.path.join(os.path.dirname(__file__), "..", "assets", "main-font", "Emulogic-zrEw.ttf")
+            self.font_regular = pygame.font.Font(os.path.normpath(_font_path), 16)
+            self.font_title = pygame.font.Font(os.path.normpath(_font_path), 48)
+            self.font_inst_title = pygame.font.Font(os.path.normpath(_font_path), 16)
+            self.font_inst_regular = pygame.font.Font(os.path.normpath(_font_path), 12)
+        except (pygame.error, FileNotFoundError) as err:
+            print("Warning: Custom font missing. Using default.")
+            self.font_regular = pygame.font.SysFont(None, 24)
+            self.font_title = pygame.font.SysFont(None, 64)
+            self.font_inst_title = pygame.font.SysFont(None, 24)
+            self.font_inst_regular = pygame.font.SysFont(None, 18)
 
     def setup_display(self, grid_w: int, grid_h: int) -> None:
         """Initialize display with grid dimensions."""
@@ -288,32 +302,42 @@ class Render:
         overlay.fill((0, 0, 0))
         self.screen.blit(overlay, (0, 0))
 
-        if not hasattr(self, 'font_large'):
-            self.font_large = pygame.font.SysFont(None, 48)
-            self.font_med = pygame.font.SysFont(None, 36)
-
         cx = self.screen.get_width() // 2
         cy = self.screen.get_height() // 2
 
-        title = self.font_large.render("PAUSED", True, (255, 255, 0))
+        title = self.font_title.render("PAUSED", True, (255, 255, 0))
         self.screen.blit(title, title.get_rect(center=(cx, cy - 60)))
 
-        opt1_color = (0, 255, 255) if selected == 0 else (255, 255, 255)
-        opt2_color = (0, 255, 255) if selected == 1 else (255, 255, 255)
+        labels = [
+                "Resume Game",
+                "Return to main menu",
+            ]
+        NORMAL_COLOR  = (255, 255, 255)
+        SELECTED_COLOR = (70,191,238)
+        self._menu_rects = []
+        for i, label in enumerate(labels):
+            if i == selected:
+                color = SELECTED_COLOR
+            else:
+                color = NORMAL_COLOR
 
-        opt1 = self.font_med.render("Resume Game", True, opt1_color)
-        opt2 = self.font_med.render("Return to Main Menu", True, opt2_color)
+            surf = self.font_regular.render(label, True, color)
+            rect = surf.get_rect(center=(cx, cy + 30 + (i * 45)))
+            self._menu_rects.append(rect)
+            self.screen.blit(surf, rect)
 
-        self.screen.blit(opt1, opt1.get_rect(center=(cx, cy + 10)))
-        self.screen.blit(opt2, opt2.get_rect(center=(cx, cy + 50)))
-
+            if i == selected:
+                mid_y = rect.centery
+                tip_x = rect.left - 15
+                pygame.draw.polygon(self.screen, color, [
+                    (tip_x - 10, mid_y - 7),
+                    (tip_x - 10, mid_y + 7),
+                    (tip_x, mid_y),
+                ])
     def draw_name_input(self, name: str, score: int, is_victory: bool) -> None:
         """Draw the post-game screen prompting for player name."""
         self.screen.fill((0, 0, 0))
 
-        if not hasattr(self, 'font_large'):
-            self.font_large = pygame.font.SysFont(None, 48)
-            self.font_med = pygame.font.SysFont(None, 36)
 
         cx = self.screen.get_width() // 2
         cy = self.screen.get_height() // 2
@@ -321,12 +345,12 @@ class Render:
         msg = "VICTORY!" if is_victory else "GAME OVER"
         color = (0, 255, 0) if is_victory else (255, 0, 0)
 
-        title = self.font_large.render(msg, True, color)
-        score_txt = self.font_med.render(f"Final Score: {score}", True, (255, 255, 255))
-        prompt = self.font_med.render("Enter Name (Max 10 chars):", True, (255, 255, 0))
+        title = self.font_title.render(msg, True, color)
+        score_txt = self.font_regular.render(f"Final Score: {score}", True, (255, 255, 255))
+        prompt = self.font_regular.render("Enter Name (Max 10 chars):", True, (255, 255, 255))
 
         # Name Input Box
-        name_txt = self.font_large.render(name + "_", True, (0, 255, 255))
+        name_txt = self.font_regular.render(name + "_", True, (70, 191, 238))
 
         self.screen.blit(title, title.get_rect(center=(cx, cy - 100)))
         self.screen.blit(score_txt, score_txt.get_rect(center=(cx, cy - 40)))
