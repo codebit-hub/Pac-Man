@@ -130,7 +130,7 @@ class Menu:
                 hs_title = self.font_regular.render("Top Scores", True, (253, 255, 0))
                 self.screen.blit(hs_title, hs_title.get_rect(center=(cx, cy + 120)))
                 for idx, hs in enumerate(top_scores):
-                    text = f"{idx + 1}. {hs['name']} - {hs['score']}"
+                    text = f"{idx + 1}. {hs['name']} - {hs['score']} PTS"
                     surf = self.font_regular.render(text, True, (255, 255, 255))
                     self.screen.blit(surf, surf.get_rect(center=(cx, cy + 155 + (idx * 25))))
 
@@ -175,7 +175,7 @@ class Menu:
             self._close_rect = dummy_surf.get_rect(topright=(bg_rect.right - close_margin, bg_rect.top + close_margin))
 
             mouse_pos = pygame.mouse.get_pos()
-            close_color = (255, 80, 80) if self._close_rect.collidepoint(mouse_pos) else (180, 180, 180)
+            close_color = (255, 80, 80) if self._close_rect.collidepoint(mouse_pos) else (255, 255, 255)
 
             close_surf = self.font_inst_title.render("X", True, close_color)
             self.screen.blit(close_surf, self._close_rect)
