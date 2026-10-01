@@ -106,12 +106,12 @@ We utilized an Agile Git workflow strictly managed through GitHub to ensure cont
 * **Pull Requests:** Stable features were merged back into the `main` branch solely through Pull Requests to prevent regressions.
 * **Task Tracking:** GitHub Issues were used as tickets to assign specific feature modules or bug fixes (e.g., fixing Pygame window shrinking).
 * **Communication:** GitHub Discussions were leveraged alongside daily coding check-ins.
-* **Documentation:** Detailed management artifacts can be found in the [Project Management Directory](https://www.google.com/search?q=./docs/project_management/).
+
 
 ---
 
 ## Resources
 
-* [The Pac-Man Dossier](https://www.google.com/search?q=https://pacman.holenet.info/) - Used to understand classic ghost AI targeting (Scatter, Chase, Flee).
+* [The Pac-Man Dossier](https://pacman.holenet.info/) - Used to understand classic ghost AI targeting (Scatter, Chase, Flee).
 * [Pygame Documentation](https://www.google.com/search?q=https://www.pygame.org/docs/) - Referenced for event handling and `Surface` alpha blending.
 * **AI Usage (Gemini/ChatGPT):** AI tools were utilized specifically as thought partners and code reviewers. They were used to help track down obscure hardware-specific Pygame crashes (e.g., full-screen toggling context crashes), debug coordinate math for the pause menu overlap, and format regex patterns for the Highscore validation backend.
