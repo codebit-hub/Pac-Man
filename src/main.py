@@ -404,6 +404,7 @@ class Application:
                 f"Inky Speed: < {self.inky.speed:.1f} >",
                 f"Clyde Speed: < {self.clyde.speed:.1f} >",
                 f"Lives: < {self.game_state.lives} >",
+                "Reset to defaults",
                 "Return to main menu"
             ]
         else:
@@ -506,7 +507,9 @@ class Application:
                 self.app_state = "PLAYING"
             elif self.pause_selected == 2:  # Invincibility
                 self.invincible = not self.invincible
-            elif self.pause_selected == 9:  # Return to menu
+            elif self.pause_selected == 9:  # Reset to defaults
+                self._reset_cheats_to_defaults()
+            elif self.pause_selected == 10:  # Return to menu
                 self.app_state = "MENU"
 
     def _adjust_cheat_value(self, key: int) -> None:
@@ -545,6 +548,34 @@ class Application:
         elif idx == 8:
             lives_diff = -1 if diff < 0 else 1
             self.game_state.lives = max(1, self.game_state.lives + lives_diff)
+
+    def _reset_cheats_to_defaults(self) -> None:
+        """Revert all cheat variables to their baseline configurations."""
+        self.invincible = False
+        self.custom_player_speed = None
+        self.custom_ghost_speeds.clear()
+
+        # Reset Pac-Man default speed (5.0)
+        self.player.speed = 5.0
+
+        # Recalculate original ghost speed for the current level
+        max_levels = self.config.get("levels")
+        start_speed = 1.0
+        end_speed = 5.2
+        if max_levels > 1:
+            speed_incr = (end_speed - start_speed) / (max_levels - 1)
+            cur_speed = start_speed + (
+                speed_incr * self.game_state.current_level_idx)
+        else:
+            cur_speed = start_speed
+
+        self.blinky.speed = cur_speed
+        self.pinky.speed = cur_speed
+        self.inky.speed = cur_speed
+        self.clyde.speed = cur_speed
+
+        # Revert to config default lives
+        self.game_state.lives = self.config.get("lives")
 
     def _run_name_input_screen(self) -> None:
         """Manages text input for highscore submission."""
