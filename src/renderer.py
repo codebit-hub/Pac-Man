@@ -35,7 +35,7 @@ class Render:
         self.last_dir: Direction = Direction.RIGHT  # fallback facing direction
         self.pacman_death: dict = {}
         self.selected_item = 0
-        
+
         self.grid_w: int = 0
         self.grid_h: int = 0
         self.offset_x: int = 0
@@ -58,17 +58,26 @@ class Render:
         """Initialize display with grid dimensions."""
         self.grid_w = grid_w
         self.grid_h = grid_h
-        
+
+        # Restore original max bounds to prevent permanent shrinking
+        self.max_w = 1260
+        self.max_h = 800
+
         # Calculate initial tight-fitting window size
         tile_w = self.max_w // grid_w
         tile_h = (self.max_h - 50) // grid_h
         ts = max(1, min(tile_w, tile_h))
-        
+
         win_w = ts * grid_w
         win_h = (ts * grid_h) + 50
-        
+
         # Initial sizing
         self.resize(win_w, win_h)
+
+        # Reset max bounds again because resize() overwrites them
+        self.max_w = 1260
+        self.max_h = 800
+
         pygame.display.set_caption("Pac-Man")
 
     def resize(self, window_w: int, window_h: int) -> None:
@@ -76,15 +85,15 @@ class Render:
         self.max_w = window_w
         self.max_h = window_h
         self.screen = pygame.display.set_mode((window_w, window_h), pygame.RESIZABLE)
-        
+
         if self.grid_w > 0 and self.grid_h > 0:
             tile_w = window_w // self.grid_w
             tile_h = (window_h - 50) // self.grid_h  # Reserve 50px for HUD
             self.tile_size = max(1, min(tile_w, tile_h))
-            
+
             maze_w = self.tile_size * self.grid_w
             maze_h = self.tile_size * self.grid_h
-            
+
             # Center the maze
             self.offset_x = (window_w - maze_w) // 2
             self.offset_y = (window_h - 50 - maze_h) // 2
@@ -246,7 +255,7 @@ class Render:
         frames = self.player_frames.get(self.last_dir) or self.player_frames.get(Direction.RIGHT)
         if frames:
             self.screen.blit(frames[self.anim_frame], (px, py))
-    
+
     def draw_pacman_death(self, grid_x: int, grid_y: int, frame_idx: int) -> None:
         """Draw one frame of the Pac-Man death animation."""
         frames = self.pacman_death.get("frames", [])
@@ -284,21 +293,38 @@ class Render:
         if sprite:
             self.screen.blit(sprite, (px, py + offset_y))
 
-    def draw_hud(self, score: int, lives: int, time_left: float, level: int, wave_mode: str) -> None:
+    def draw_hud(self, score: int, lives: int, time_left: float,
+                 level: int, total_levels: int, wave_mode: str,
+                 is_eval: bool = False, cheat_str: str = ""
+    ) -> None:
         """Draw basic game stats at the bottom of the screen."""
         if not hasattr(self, 'font'):
             self.font = pygame.font.SysFont(None, 24)
 
-        hud_text = (f"Level: {level}     Score: {score}     Lives: {lives}"
-                    f"     Time: {int(time_left)}     Mode: {wave_mode}")
-        surf = self.font.render(hud_text, True, (255, 255, 255))
-        self.screen.blit(surf, (20, self.screen.get_height() - 35))
+        # Shift main HUD up slightly to make room for cheats if eval
+        if is_eval:
+            y_pos = self.screen.get_height() - 40
+        else:
+            y_pos = self.screen.get_height() - 35
 
-    def draw_pause_menu(self, selected: int) -> None:
+        hud_text = (f"Level: {level}/{total_levels}    Score: {score}     "
+                    f"Lives: {lives}    Time: {int(time_left)}")
+        if is_eval:
+            hud_text += f"    Mode: {wave_mode}"
+
+        surf = self.font.render(hud_text, True, (255, 255, 255))
+        self.screen.blit(surf, (20, y_pos))
+
+        if is_eval and cheat_str:
+            cheat_surf = self.font.render(cheat_str, True, (255, 255, 0))
+            self.screen.blit(cheat_surf, (20, self.screen.get_height() - 20))
+
+    def draw_pause_menu(self, selected: int, labels: list[str]) -> None:
         """Draws a semi-transparent pause overlay and options."""
 
         overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()))
-        overlay.set_alpha(150)
+        # overlay screen color
+        overlay.set_alpha(210)
         overlay.fill((0, 0, 0))
         self.screen.blit(overlay, (0, 0))
 
@@ -306,23 +332,18 @@ class Render:
         cy = self.screen.get_height() // 2
 
         title = self.font_title.render("PAUSED", True, (255, 255, 0))
-        self.screen.blit(title, title.get_rect(center=(cx, cy - 60)))
+        self.screen.blit(title, title.get_rect(center=(cx, cy - 200)))
 
-        labels = [
-                "Resume Game",
-                "Return to main menu",
-            ]
         NORMAL_COLOR  = (255, 255, 255)
         SELECTED_COLOR = (70,191,238)
         self._menu_rects = []
-        for i, label in enumerate(labels):
-            if i == selected:
-                color = SELECTED_COLOR
-            else:
-                color = NORMAL_COLOR
 
+        start_y = cy - 110
+
+        for i, label in enumerate(labels):
+            color = SELECTED_COLOR if i == selected else NORMAL_COLOR
             surf = self.font_regular.render(label, True, color)
-            rect = surf.get_rect(center=(cx, cy + 30 + (i * 45)))
+            rect = surf.get_rect(center=(cx, start_y + (i * 35)))
             self._menu_rects.append(rect)
             self.screen.blit(surf, rect)
 
@@ -334,6 +355,7 @@ class Render:
                     (tip_x - 10, mid_y + 7),
                     (tip_x, mid_y),
                 ])
+
     def draw_name_input(self, name: str, score: int, is_victory: bool) -> None:
         """Draw the post-game screen prompting for player name."""
         self.screen.fill((0, 0, 0))
