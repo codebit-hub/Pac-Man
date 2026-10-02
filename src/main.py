@@ -300,11 +300,13 @@ class Application:
                     self.player.set_direction(Direction.LEFT)
                 elif ev.key in (pygame.K_d, pygame.K_RIGHT):
                     self.player.set_direction(Direction.RIGHT)
-                elif ev.key in (pygame.K_p, pygame.K_SPACE, pygame.K_ESCAPE):
+                elif ev.key in (
+                    pygame.K_p, pygame.K_SPACE, pygame.K_ESCAPE, pygame.K_BACKSPACE):
                     if ev.key == pygame.K_ESCAPE and self.render.is_fullscreen:
                         self.render.set_fullscreen(False)
                     self.app_state = "PAUSE"
                     self.pause_selected = 0
+                    self.audio.stop_sfx()
                     self.audio.play_bgm("pause")
                     return
 
@@ -405,9 +407,11 @@ class Application:
         if self.game_state.is_frightened:
             mode_text = "FLEE"
 
-        # Manage audio based on the intro timer
         if self.intro_timer > 0:
             self.intro_timer -= dt
+            # Force the pause music to stop if we unpaused during the intro delay
+            if self.audio.current_bgm is not None:
+                self.audio.stop_bgm()
         else:
             if self.game_state.is_frightened:
                 self.audio.play_bgm("flee")
@@ -472,6 +476,7 @@ class Application:
                     self.pause_selected = (self.pause_selected + 1) % len(labels)
                 elif ev.key == pygame.K_SPACE:
                     self.app_state = "PLAYING"
+                    self.audio.stop_bgm()
                 elif ev.key in (pygame.K_RETURN, pygame.K_p):
                     self._execute_pause_action()
                 elif ev.key in (pygame.K_a, pygame.K_LEFT, pygame.K_d, pygame.K_RIGHT):
@@ -548,6 +553,7 @@ class Application:
         """Handle execution of selected pause menu items."""
         if self.pause_selected == 0:
             self.app_state = "PLAYING"
+            self.audio.stop_bgm()
         elif not self.is_eval and self.pause_selected == 1:
             self.app_state = "MENU"
         elif self.is_eval:

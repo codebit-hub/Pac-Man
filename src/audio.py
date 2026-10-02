@@ -72,6 +72,13 @@ class AudioManager:
         if sound:
             sound.play()
 
+    def stop_sfx(self) -> None:
+        """Stops all currently playing sound effects (e.g., intro, waka)."""
+        try:
+            pygame.mixer.stop()
+        except pygame.error:
+            pass
+
     def play_bgm(self, name: str, loops: int = -1) -> None:
         """Plays a looping track, replaces current track."""
 
