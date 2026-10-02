@@ -306,6 +306,7 @@ class Application:
                         self.render.set_fullscreen(False)
                     self.app_state = "PAUSE"
                     self.pause_selected = 0
+                    self.intro_timer = 0.0
                     self.audio.stop_sfx()
                     self.audio.play_bgm("pause")
                     return
