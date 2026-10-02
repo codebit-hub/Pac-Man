@@ -278,7 +278,8 @@ class Menu:
                         break
 
         elif self.state == "instructions":
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            if event.type == pygame.KEYDOWN and event.key in (
+                pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_KP_ENTER):
                 self.state = "main"
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if hasattr(self, "_close_rect") and self._close_rect.collidepoint(event.pos):
