@@ -50,6 +50,12 @@ class Application:
         # New state variables
         self.pause_selected = 0
         self.input_name = ""
+        self.is_eval = self.config.get("game_mode") == "evaluation"
+        self.invincible = False
+
+        # Track manual speed changes to persist them across level/death reloads
+        self.custom_player_speed = None
+        self.custom_ghost_speeds = {}
 
         # Store the original menu activate method
         self._og_activate = self.menu._activate_item
@@ -103,6 +109,10 @@ class Application:
         # Initialize Entities
         sp_x, sp_y = self.loader.spawn_point
         self.player = Player(sp_x, sp_y)
+
+        if self.is_eval and self.custom_player_speed is not None:
+            self.player.speed = self.custom_player_speed
+
         self._init_ghosts()
 
         # Setup Renderer
@@ -154,10 +164,18 @@ class Application:
         else:
             cur_speed = start_speed
 
-        self.blinky = Blinky(locs[0][0], locs[0][1], speed=cur_speed)
-        self.pinky = Pinky(locs[1][0], locs[1][1], speed=cur_speed)
-        self.inky = Inky(locs[2][0], locs[2][1], speed=cur_speed)
-        self.clyde = Clyde(locs[3][0], locs[3][1], speed=cur_speed)
+        if self.is_eval:
+            b_spd = self.custom_ghost_speeds.get('blinky', cur_speed)
+            p_spd = self.custom_ghost_speeds.get('pinky', cur_speed)
+            i_spd = self.custom_ghost_speeds.get('inky', cur_speed)
+            c_spd = self.custom_ghost_speeds.get('clyde', cur_speed)
+        else:
+            b_spd = p_spd = i_spd = c_spd = cur_speed
+
+        self.blinky = Blinky(locs[0][0], locs[0][1], speed=b_spd)
+        self.pinky = Pinky(locs[1][0], locs[1][1], speed=p_spd)
+        self.inky = Inky(locs[2][0], locs[2][1], speed=i_spd)
+        self.clyde = Clyde(locs[3][0], locs[3][1], speed=c_spd)
         self.ghosts = [self.blinky, self.pinky, self.inky, self.clyde]
 
         # Apply shuffled colors to ghosts
@@ -288,13 +306,19 @@ class Application:
             self.app_state = "NAME_INPUT"
             return
 
-        self.player.update(dt, self.grid)
+        # If entity's speed is 0,
+        # division time_per_tile = 1.0 / self.speed means
+        # dividing by 0 which crashes the game. If 0,
+        # we dont update the frame
+        if self.player.speed > 0:
+            self.player.update(dt, self.grid)
 
         for g in self.ghosts:
-            g.update(
-                dt, self.grid, self.player.grid_x, self.player.grid_y,
-                self.player.current_dir, self.blinky.grid_x, self.blinky.grid_y
-            )
+            if g.speed > 0:
+                g.update(
+                    dt, self.grid, self.player.grid_x, self.player.grid_y,
+                    self.player.current_dir, self.blinky.grid_x, self.blinky.grid_y
+                )
 
         # 2. Consumption & Collisions
         px, py = self.player.grid_x, self.player.grid_y
@@ -311,12 +335,13 @@ class Application:
                     g.die()
                     self.game_state.eat_ghost()
                 elif g.state in (GhostState.CHASE, GhostState.SCATTER):
-                    self.game_state.lose_life()
-                    if self.game_state.state != State.GAME_OVER:
-                        self._play_death_anim(px, py)
-                        self.player.respawn()
-                        self._init_ghosts()
-                    return
+                    if not self.invincible:
+                        self.game_state.lose_life()
+                        if self.game_state.state != State.GAME_OVER:
+                            self._play_death_anim(px, py)
+                            self.player.respawn()
+                            self._init_ghosts()
+                        return
 
         # 3. Draw Frame
         self.render.screen.fill((20, 20, 40))
@@ -345,18 +370,50 @@ class Application:
         if self.game_state.is_frightened:
             mode_text = "FLEE"
 
+        cheat_str = ""
+        if self.is_eval:
+            inv = "ON" if self.invincible else "OFF"
+            cheat_str = (f"INV: {inv} | "
+                         f"SPEEDS: Pac-Man: {self.player.speed:.1f} | "
+                         f"Blinky: {self.blinky.speed:.1f} | "
+                         f"Pinky: {self.pinky.speed:.1f} | "
+                         f"Inky: {self.inky.speed:.1f} | "
+                         f"Clyde: {self.clyde.speed:.1f}")
+
+        total_levels = self.config.get("levels")
+
         self.render.draw_hud(
             self.game_state.score,
             self.game_state.lives,
             self.game_state.time_remaining,
             self.game_state.current_level_idx + 1,
-            mode_text
+            total_levels,
+            mode_text,
+            self.is_eval,
+            cheat_str
         )
 
         self.render.render_frame()
 
     def _run_pause_frame(self) -> None:
         """Draw basic pause screen waiting for keypress."""
+
+        if self.is_eval:
+            labels = [
+                "Resume Game",
+                f"Level: < {self.game_state.current_level_idx + 1} >",
+                f"Invincibility: < {'ON' if self.invincible else 'OFF'} >",
+                f"Pac-Man Speed: < {self.player.speed:.1f} >",
+                f"Blinky Speed: < {self.blinky.speed:.1f} >",
+                f"Pinky Speed: < {self.pinky.speed:.1f} >",
+                f"Inky Speed: < {self.inky.speed:.1f} >",
+                f"Clyde Speed: < {self.clyde.speed:.1f} >",
+                f"Lives: < {self.game_state.lives} >",
+                "Reset to defaults",
+                "Return to main menu"
+            ]
+        else:
+            labels = ["Resume Game", "Return to main menu"]
 
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
@@ -365,15 +422,16 @@ class Application:
             elif ev.type == pygame.VIDEORESIZE:
                 self.render.resize(ev.w, ev.h)
             elif ev.type == pygame.KEYDOWN:
-                if ev.key in (pygame.K_w, pygame.K_UP, pygame.K_s, pygame.K_DOWN):
-                    self.pause_selected = 1 - self.pause_selected
+                if ev.key in (pygame.K_w, pygame.K_UP):
+                    self.pause_selected = (self.pause_selected - 1) % len(labels)
+                elif ev.key in (pygame.K_s, pygame.K_DOWN):
+                    self.pause_selected = (self.pause_selected + 1) % len(labels)
                 elif ev.key == pygame.K_SPACE:
                     self.app_state = "PLAYING"
                 elif ev.key in (pygame.K_RETURN, pygame.K_p):
-                    if self.pause_selected == 0:
-                        self.app_state = "PLAYING"
-                    else:
-                        self.app_state = "MENU"
+                    self._execute_pause_action()
+                elif ev.key in (pygame.K_a, pygame.K_LEFT, pygame.K_d, pygame.K_RIGHT):
+                    self._adjust_cheat_value(ev.key)
             elif ev.type == pygame.MOUSEMOTION:
                 mouse_pos = ev.pos
                 if hasattr(self.render, '_menu_rects'):
@@ -386,13 +444,143 @@ class Application:
                     for i, rect in enumerate(self.render._menu_rects):
                         if rect.collidepoint(mouse_pos):
                             self.pause_selected = i
-                            if self.pause_selected == 0:
-                                self.app_state = "PLAYING"
+                            # If evaluating and clicking a cheat arrow, advance it
+                            if self.is_eval and 0 < i < 9:
+                                self._adjust_cheat_value(pygame.K_RIGHT)
                             else:
-                                self.app_state = "MENU"
+                                self._execute_pause_action()
 
-        self.render.draw_pause_menu(self.pause_selected)
+        # 1. Redraw the maze so the transparent overlay doesn't fade to black
+        self.render.screen.fill((20, 20, 40))
+        for y, row in enumerate(self.grid):
+            for x, cell in enumerate(row):
+                if cell == 0:
+                    self.render.draw_wall(x, y)
+                elif cell == 4:
+                    self.render.draw_wall(x, y, is_logo=True)
+                elif cell == 2:
+                    self.render.draw_pacgum(x, y)
+                elif cell == 3:
+                    self.render.draw_powergum(x, y)
+        self.render.draw_walls_grid(self.grid)
+
+        # 2. Redraw the entities (with 0.0 delta_time so they freeze)
+        self.render.draw_player(
+            self.player.grid_x, self.player.grid_y, self.player.current_dir, 0.0
+        )
+        for g in self.ghosts:
+            self.render.draw_ghost(
+                g.grid_x, g.grid_y, g.color_name,
+                g.state.value, self.game_state.frigthened_timer
+            )
+
+        # 3. Redraw the HUD
+        mode_text = "SCATTER" if self.is_scatter_wave else "CHASE"
+        if self.game_state.is_frightened:
+            mode_text = "FLEE"
+
+        cheat_str = ""
+        if self.is_eval:
+            inv = "ON" if self.invincible else "OFF"
+            cheat_str = (f"INV: {inv} | "
+                         f"SPEEDS: Pac-Man: {self.player.speed:.1f} | "
+                         f"Blinky: {self.blinky.speed:.1f} | "
+                         f"Pinky: {self.pinky.speed:.1f} | "
+                         f"Inky: {self.inky.speed:.1f} | "
+                         f"Clyde: {self.clyde.speed:.1f}")
+
+        self.render.draw_hud(
+            self.game_state.score, self.game_state.lives,
+            self.game_state.time_remaining,
+            self.game_state.current_level_idx + 1,
+            self.config.get("levels"), mode_text, self.is_eval, cheat_str
+        )
+
+        # 4. Finally, draw the Pause Overlay on top
+        self.render.draw_pause_menu(self.pause_selected, labels)
         self.render.render_frame()
+
+    def _execute_pause_action(self) -> None:
+        """Handle execution of selected pause menu items."""
+        if self.pause_selected == 0:
+            self.app_state = "PLAYING"
+        elif not self.is_eval and self.pause_selected == 1:
+            self.app_state = "MENU"
+        elif self.is_eval:
+            if self.pause_selected == 1:  # Level Transition
+                self.game_state.state = State.LEVEL_TRANSITION
+                self.app_state = "PLAYING"
+            elif self.pause_selected == 2:  # Invincibility
+                self.invincible = not self.invincible
+            elif self.pause_selected == 9:  # Reset to defaults
+                self._reset_cheats_to_defaults()
+            elif self.pause_selected == 10:  # Return to menu
+                self.app_state = "MENU"
+
+    def _adjust_cheat_value(self, key: int) -> None:
+        """Adjust evaluation values with left/right arrows."""
+        if not self.is_eval:
+            return
+
+        diff = -0.5 if key in (pygame.K_a, pygame.K_LEFT) else 0.5
+        idx = self.pause_selected
+
+        if idx == 1:
+            lvl_diff = -1 if diff < 0 else 1
+            max_lvl = self.config.get("levels")
+            new_lvl = self.game_state.current_level_idx + lvl_diff
+            # Allow cycling through levels without breaking bounds
+            if 0 <= new_lvl < max_lvl:
+                self.game_state.current_level_idx = new_lvl
+                self.game_state.state = State.LEVEL_TRANSITION
+        elif idx == 2:
+            self.invincible = not self.invincible
+        elif idx == 3:
+            self.player.speed = max(0.0, min(10.0, self.player.speed + diff))
+            self.custom_player_speed = self.player.speed
+        elif idx == 4:
+            self.blinky.speed = max(0.0, min(10.0, self.blinky.speed + diff))
+            self.custom_ghost_speeds['blinky'] = self.blinky.speed
+        elif idx == 5:
+            self.pinky.speed = max(0.0, min(10.0, self.pinky.speed + diff))
+            self.custom_ghost_speeds['pinky'] = self.pinky.speed
+        elif idx == 6:
+            self.inky.speed = max(0.0, min(10.0, self.inky.speed + diff))
+            self.custom_ghost_speeds['inky'] = self.inky.speed
+        elif idx == 7:
+            self.clyde.speed = max(0.0, min(10.0, self.clyde.speed + diff))
+            self.custom_ghost_speeds['clyde'] = self.clyde.speed
+        elif idx == 8:
+            lives_diff = -1 if diff < 0 else 1
+            self.game_state.lives = max(1, self.game_state.lives + lives_diff)
+
+    def _reset_cheats_to_defaults(self) -> None:
+        """Revert all cheat variables to their baseline configurations."""
+        self.invincible = False
+        self.custom_player_speed = None
+        self.custom_ghost_speeds.clear()
+
+        # Reset Pac-Man default speed (5.0)
+        self.player.speed = 5.0
+
+        # Recalculate original ghost speed for the current level
+        max_levels = self.config.get("levels")
+        start_speed = 1.0
+        end_speed = 5.2
+        if max_levels > 1:
+            speed_incr = (end_speed - start_speed) / (max_levels - 1)
+            cur_speed = start_speed + (
+                speed_incr * self.game_state.current_level_idx)
+        else:
+            cur_speed = start_speed
+
+        self.blinky.speed = cur_speed
+        self.pinky.speed = cur_speed
+        self.inky.speed = cur_speed
+        self.clyde.speed = cur_speed
+
+        # Revert to config default lives
+        self.game_state.lives = self.config.get("lives")
 
     def _run_name_input_screen(self) -> None:
         """Manages text input for highscore submission."""
