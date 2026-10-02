@@ -106,12 +106,33 @@ We utilized an Agile Git workflow strictly managed through GitHub to ensure cont
 * **Pull Requests:** Stable features were merged back into the `main` branch solely through Pull Requests to prevent regressions.
 * **Task Tracking:** GitHub Issues were used as tickets to assign specific feature modules or bug fixes (e.g., fixing Pygame window shrinking).
 * **Communication:** GitHub Discussions were leveraged alongside daily coding check-ins.
-* **Documentation:** Detailed management artifacts can be found in the [Project Management Directory](https://www.google.com/search?q=./docs/project_management/).
+
 
 ---
 
 ## Resources
 
-* [The Pac-Man Dossier](https://www.google.com/search?q=https://pacman.holenet.info/) - Used to understand classic ghost AI targeting (Scatter, Chase, Flee).
-* [Pygame Documentation](https://www.google.com/search?q=https://www.pygame.org/docs/) - Referenced for event handling and `Surface` alpha blending.
-* **AI Usage (Gemini/ChatGPT):** AI tools were utilized specifically as thought partners and code reviewers. They were used to help track down obscure hardware-specific Pygame crashes (e.g., full-screen toggling context crashes), debug coordinate math for the pause menu overlap, and format regex patterns for the Highscore validation backend.
+## Resources
+### General and Algorithmic Research
+* [The Pac-Man Dossier](https://pacman.holenet.info/) - A foundational reference for understanding the original Pac-Man ruleset, ghost targeting behavior, maze logic, and the classic Scatter, Chase, and Frightened modes. It was especially useful for validating the game’s AI decisions against the canonical arcade model.
+* [Pac-Man Ghost AI Explained](https://www.youtube.com/watch?v=ataGotQ7ir8) - A practical video breakdown of the ghost AI system, helping clarify how each ghost uses different target vectors and behavior phases to create the classic arcade pacing and difficulty curve.
+* [Learn the Ghost Movement Patterns](https://www.youtube.com/watch?v=8RLq4QLwoGA) - A visual guide to ghost movement logic and pattern transitions, which helped us reason about pathing, direction changes, and how AI updates over time during gameplay.
+* [How Frightened Ghosts Decide Where to Go](https://www.youtube.com/watch?v=eFP0_rkjwlY) - A focused explanation of frightened-mode behavior, showing how ghosts prioritize avoidance and movement choices when the player is able to eat them.
+* [Pygame Documentation](https://www.pygame.org/docs/) - The official reference for event handling, sprite rendering, surfaces, collision detection, timing, and game loops. This documentation was essential for implementing smooth movement and reliable UI updates.
+
+### External Audio Content
+* [Pac-Man Soundtracks & Audio Archive (Khinsider)](https://downloads.khinsider.com/search?search=pacman) - A public archive of Pac-Man-related audio files and soundtrack releases, used as a reference for selecting and analyzing retro arcade music and sound effects.
+* [Pac-Man Game Sound Effects - Original Soundtrack (Khinsider)](https://downloads.khinsider.com/game-soundtracks/album/pac-man-game-sound-effect-original-soundtrack-2024) - A digitally archived collection of Pac-Man sound effects and associated audio material. This source was used as a reference for the characteristic timing, tone, and synth texture of the original arcade sound design.
+* [Pac-Man 256 Android/iOS Gamerip (Khinsider)](https://downloads.khinsider.com/game-soundtracks/album/pacman-256-android-ios-gamerip-2015) - A public audio archive related to the Pac-Man 256 franchise and associated sound palette, used to compare variations in arcade-era game audio and tonal treatment.
+* [JR Pac-Man Arcade Gamerip (Khinsider)](https://downloads.khinsider.com/game-soundtracks/album/jr-pacman-arcade-gamerip-1983) - A retro arcade audio archive for JR Pac-Man, used as a stylistic reference for classic maze-chase-era sound patterns and chip-tune production techniques.
+* [Pac-Mania Original Soundtrack (Khinsider)](https://downloads.khinsider.com/game-soundtracks/album/pac-mania-original-soundtrack-2020) - A soundtrack archive used to study the broader Pac-Man franchise sound identity and compare later arcade interpretations of the same classic gameplay aesthetic.
+* [Pac-Mania Original Soundtrack (Khinsider, Alternate Archive)](https://downloads.khinsider.com/game-soundtracks/album/pac-mania-original-soundtrack-2024) - An alternate public archive of the Pac-Mania soundtrack used for stylistic reference and audio analysis during the design of the project’s retro effects.
+* [ClassicGaming.cc - Pac-Man Sounds](https://classicgaming.cc/classics/pac-man/sounds) - Archive of original Pac-Man sound effects and historical audio references, used to verify the characteristic timbre and sequencing of the classic arcade effects.
+
+### AI Usage
+* **AI Usage (Gemini/ChatGPT):** AI tools were used as coding assistants and review partners to design and implement game development strategy, debug state-machine edge cases, validate logic for score/timer systems, and help refine regex-based validation and configuration parsing. They were also helpful for identifying subtle rendering and timing issues caused by platform-specific behavior and Pygame event quirks as well as integrating audio effects into the game.
+
+### Legal Disclaimer
+
+The audio files and sound archives used in this project were obtained from publicly available sources that distribute archival or reference recordings free of charge. Their use in this project was limited to educational, non-commercial, and demonstrative purposes and was carried out in accordance with applicable copyright law and the terms of the corresponding source platforms. This project does not claim ownership of the original sound recordings; all rights remain with their respective copyright holders. We do not distribute the original audio files as standalone assets and do not use them for commercial gain.
+---

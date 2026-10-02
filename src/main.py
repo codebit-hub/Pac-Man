@@ -15,7 +15,7 @@ from renderer import Render
 from menu import Menu
 from highscore_screen import Highscorescreen
 from ui_config import UIConfig
-
+from audio import AudioManager
 
 
 class Application:
@@ -25,6 +25,7 @@ class Application:
         self.render = Render()
         self.config = ConfigManager()
         self.ui = UIConfig()
+        self.audio = AudioManager()
 
         # Load config from argv
         self.config.load(config_path)
@@ -52,6 +53,7 @@ class Application:
         self.input_name = ""
         self.is_eval = self.config.get("game_mode") == "evaluation"
         self.invincible = False
+        self.intro_timer = 0.0
 
         # Track manual speed changes to persist them across level/death reloads
         self.custom_player_speed = None
@@ -78,6 +80,10 @@ class Application:
         self.game_state.start_game()
         self._load_level()
         self.app_state = "PLAYING"
+        # Stop the menu music and play the Level 1 intro
+        self.audio.stop_bgm()
+        self.audio.play_sfx("intro")
+        self.intro_timer = 4.0
 
     def _load_level(self) -> None:
         """Generate maze, spawn entities, and prepare renderer."""
@@ -184,6 +190,10 @@ class Application:
 
     def _play_death_anim(self, grid_x: int, grid_y: int) -> None:
         """Play Pac-Man death animation before respawn."""
+
+        self.audio.stop_bgm()           # <-- CUT MUSIC
+        self.audio.play_sfx("death")    # <-- PLAY DEATH SFX
+
         frames = self.render.pacman_death.get("frames", [])
         if not frames:
             pygame.time.wait(600)
@@ -245,6 +255,7 @@ class Application:
             dt = clock.tick(60) / 1000.0
 
             if self.app_state == "MENU":
+                self.audio.play_bgm("menu")
                 for ev in pygame.event.get():
                     if ev.type == pygame.QUIT:
                         pygame.quit()
@@ -261,6 +272,7 @@ class Application:
                 self._run_game_frame(dt)
 
             elif self.app_state == "PAUSE":
+                self.audio.play_bgm("pause")
                 self._run_pause_frame()
 
             elif self.app_state == "NAME_INPUT":
@@ -268,6 +280,7 @@ class Application:
 
             elif self.app_state == "HIGHSCORES":
                 self.highscore_screen._run_highscore_screen(self)
+                self.audio.play_bgm("menu")
 
     def _run_game_frame(self, dt: float) -> None:
         """Execute one frame of gameplay."""
@@ -287,9 +300,12 @@ class Application:
                     self.player.set_direction(Direction.LEFT)
                 elif ev.key in (pygame.K_d, pygame.K_RIGHT):
                     self.player.set_direction(Direction.RIGHT)
-                elif ev.key in (pygame.K_p, pygame.K_SPACE):
+                elif ev.key in (pygame.K_p, pygame.K_SPACE, pygame.K_ESCAPE):
+                    if ev.key == pygame.K_ESCAPE and self.render.is_fullscreen:
+                        self.render.set_fullscreen(False)
                     self.app_state = "PAUSE"
                     self.pause_selected = 0
+                    self.audio.play_bgm("pause")
                     return
 
         # 1. Update State
@@ -304,6 +320,13 @@ class Application:
             # Transition to name input
             self.input_name = ""
             self.app_state = "NAME_INPUT"
+
+            # Victory/Game Over audio loops
+            if self.game_state.state == State.VICTORY:
+                self.audio.play_bgm("victory")
+            else:
+                self.audio.stop_bgm()
+                self.audio.play_sfx("game_over")
             return
 
         # If entity's speed is 0,
@@ -315,25 +338,37 @@ class Application:
 
         for g in self.ghosts:
             if g.speed > 0:
+                old_state = g.state
+
                 g.update(
                     dt, self.grid, self.player.grid_x, self.player.grid_y,
                     self.player.current_dir, self.blinky.grid_x, self.blinky.grid_y
                 )
+
+                # If the ghost was EATEN but is now active again, it just respawned
+                if old_state == GhostState.EATEN and g.state != GhostState.EATEN:
+                    self.audio.play_sfx("respawn")
 
         # 2. Consumption & Collisions
         px, py = self.player.grid_x, self.player.grid_y
         if self.grid[py][px] == 2:
             self.grid[py][px] = 1
             self.game_state.collect_pacgums()
+            self.audio.play_sfx("waka")
         elif self.grid[py][px] == 3:
             self.grid[py][px] = 1
             self.game_state.collect_super_pacgum()
+            self.audio.play_sfx("power")
 
         for g in self.ghosts:
             if px == g.grid_x and py == g.grid_y:
                 if g.state == GhostState.FLEE:
                     g.die()
-                    self.game_state.eat_ghost()
+                    # Only play sounds if die() changed the state
+                    if g.state != GhostState.FLEE:
+                        self.game_state.eat_ghost()
+                        self.audio.play_sfx("eat_ghost")
+                        #self.audio.play_sfx("respawn")
                 elif g.state in (GhostState.CHASE, GhostState.SCATTER):
                     if not self.invincible:
                         self.game_state.lose_life()
@@ -369,6 +404,15 @@ class Application:
         mode_text = "SCATTER" if self.is_scatter_wave else "CHASE"
         if self.game_state.is_frightened:
             mode_text = "FLEE"
+
+        # Manage audio based on the intro timer
+        if self.intro_timer > 0:
+            self.intro_timer -= dt
+        else:
+            if self.game_state.is_frightened:
+                self.audio.play_bgm("flee")
+            else:
+                self.audio.play_bgm("siren")
 
         cheat_str = ""
         if self.is_eval:
@@ -609,6 +653,7 @@ class Application:
             self.input_name, self.game_state.score, is_victory
         )
         self.render.render_frame()
+
 
 
 
