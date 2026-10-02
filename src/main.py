@@ -14,8 +14,8 @@ from ghost import GhostState, Blinky, Pinky, Inky, Clyde
 from renderer import Render
 from menu import Menu
 from highscore_screen import Highscorescreen
-from ui_config import UIConfig
 from audio import AudioManager
+from pause_menu import PauseMenu
 
 
 class Application:
@@ -24,7 +24,6 @@ class Application:
     def __init__(self, config_path: str) -> None:
         self.render = Render()
         self.config = ConfigManager()
-        self.ui = UIConfig()
         self.audio = AudioManager()
 
         # Load config from argv
@@ -42,6 +41,7 @@ class Application:
         self.game_state = GameState(self.config)
         self.highscores = HighScoreManager(self.config.get("highscore_filename"))
         self.highscore_screen = Highscorescreen(self.screen, self.highscores)
+        self.pause_menu_screen = PauseMenu(self.screen)
 
         # Setup Vokotera's Menu and Monkey-Patch the selections
         self.menu = Menu(self.screen)
@@ -128,13 +128,13 @@ class Application:
         self.render.setup_display(grid_w, grid_h)
 
         base = os.path.dirname(__file__)
-        self.render.load_spritesheet(os.path.normpath(
-            os.path.join(base, "..", "assets", "spritesheets", "main-spritesheet.png")))
         self.render.load_dot(os.path.normpath(
             os.path.join(base, "..", "assets", "others", "dot.png")))
         self.render.load_player_frames(os.path.normpath(
             os.path.join(base, "..", "assets", "pacman")))
-        self.render.load_ghost_sprites()
+        self.render.load_spritesheet(os.path.normpath(
+            os.path.join(base, "..", "assets", "spritesheets", "main-spritesheet.png")))
+        self.render.load_ghost_assets()
         self.render.load_pacman_death()
 
         # Place into the game only the available pacgums based on empty corridors
@@ -273,7 +273,7 @@ class Application:
 
             elif self.app_state == "PAUSE":
                 self.audio.play_bgm("pause")
-                self._run_pause_frame()
+                self.pause_menu_screen.run(self)
 
             elif self.app_state == "NAME_INPUT":
                 self._run_name_input_screen()
@@ -443,195 +443,6 @@ class Application:
         )
 
         self.render.render_frame()
-
-    def _run_pause_frame(self) -> None:
-        """Draw basic pause screen waiting for keypress."""
-
-        if self.is_eval:
-            labels = [
-                "Resume Game",
-                f"Level: < {self.game_state.current_level_idx + 1} >",
-                f"Invincibility: < {'ON' if self.invincible else 'OFF'} >",
-                f"Pac-Man Speed: < {self.player.speed:.1f} >",
-                f"Blinky Speed: < {self.blinky.speed:.1f} >",
-                f"Pinky Speed: < {self.pinky.speed:.1f} >",
-                f"Inky Speed: < {self.inky.speed:.1f} >",
-                f"Clyde Speed: < {self.clyde.speed:.1f} >",
-                f"Lives: < {self.game_state.lives} >",
-                "Reset to defaults",
-                "Return to main menu"
-            ]
-        else:
-            labels = ["Resume Game", "Return to main menu"]
-
-        for ev in pygame.event.get():
-            if ev.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif ev.type == pygame.VIDEORESIZE:
-                self.render.resize(ev.w, ev.h)
-            elif ev.type == pygame.KEYDOWN:
-                if ev.key in (pygame.K_w, pygame.K_UP):
-                    self.pause_selected = (self.pause_selected - 1) % len(labels)
-                elif ev.key in (pygame.K_s, pygame.K_DOWN):
-                    self.pause_selected = (self.pause_selected + 1) % len(labels)
-                elif ev.key == pygame.K_SPACE:
-                    self.app_state = "PLAYING"
-                    self.audio.stop_bgm()
-                elif ev.key in (pygame.K_RETURN, pygame.K_p):
-                    self._execute_pause_action()
-                elif ev.key in (pygame.K_a, pygame.K_LEFT, pygame.K_d, pygame.K_RIGHT):
-                    self._adjust_cheat_value(ev.key)
-            elif ev.type == pygame.MOUSEMOTION:
-                mouse_pos = ev.pos
-                if hasattr(self.render, '_menu_rects'):
-                    for i, rect in enumerate(self.render._menu_rects):
-                        if rect.collidepoint(mouse_pos):
-                            self.pause_selected = i
-            elif ev.type == pygame.MOUSEBUTTONDOWN:
-                if ev.button == 1 and hasattr(self.render, '_menu_rects'):
-                    mouse_pos = ev.pos
-                    for i, rect in enumerate(self.render._menu_rects):
-                        if rect.collidepoint(mouse_pos):
-                            self.pause_selected = i
-                            # If evaluating and clicking a cheat arrow, advance it
-                            if self.is_eval and 0 < i < 9:
-                                self._adjust_cheat_value(pygame.K_RIGHT)
-                            else:
-                                self._execute_pause_action()
-
-        # 1. Redraw the maze so the transparent overlay doesn't fade to black
-        self.render.screen.fill((20, 20, 40))
-        for y, row in enumerate(self.grid):
-            for x, cell in enumerate(row):
-                if cell == 0:
-                    self.render.draw_wall(x, y)
-                elif cell == 4:
-                    self.render.draw_wall(x, y, is_logo=True)
-                elif cell == 2:
-                    self.render.draw_pacgum(x, y)
-                elif cell == 3:
-                    self.render.draw_powergum(x, y)
-        self.render.draw_walls_grid(self.grid)
-
-        # 2. Redraw the entities (with 0.0 delta_time so they freeze)
-        self.render.draw_player(
-            self.player.grid_x, self.player.grid_y, self.player.current_dir, 0.0
-        )
-        for g in self.ghosts:
-            self.render.draw_ghost(
-                g.grid_x, g.grid_y, g.color_name,
-                g.state.value, self.game_state.frigthened_timer
-            )
-
-        # 3. Redraw the HUD
-        mode_text = "SCATTER" if self.is_scatter_wave else "CHASE"
-        if self.game_state.is_frightened:
-            mode_text = "FLEE"
-
-        cheat_str = ""
-        if self.is_eval:
-            inv = "ON" if self.invincible else "OFF"
-            cheat_str = (f"INV: {inv} | "
-                         f"SPEEDS: Pac-Man: {self.player.speed:.1f} | "
-                         f"Blinky: {self.blinky.speed:.1f} | "
-                         f"Pinky: {self.pinky.speed:.1f} | "
-                         f"Inky: {self.inky.speed:.1f} | "
-                         f"Clyde: {self.clyde.speed:.1f}")
-
-        self.render.draw_hud(
-            self.game_state.score, self.game_state.lives,
-            self.game_state.time_remaining,
-            self.game_state.current_level_idx + 1,
-            self.config.get("levels"), mode_text, self.is_eval, cheat_str
-        )
-
-        # 4. Finally, draw the Pause Overlay on top
-        self.render.draw_pause_menu(self.pause_selected, labels)
-        self.render.render_frame()
-
-    def _execute_pause_action(self) -> None:
-        """Handle execution of selected pause menu items."""
-        if self.pause_selected == 0:
-            self.app_state = "PLAYING"
-            self.audio.stop_bgm()
-        elif not self.is_eval and self.pause_selected == 1:
-            self.app_state = "MENU"
-        elif self.is_eval:
-            if self.pause_selected == 1:  # Level Transition
-                self.game_state.state = State.LEVEL_TRANSITION
-                self.app_state = "PLAYING"
-            elif self.pause_selected == 2:  # Invincibility
-                self.invincible = not self.invincible
-            elif self.pause_selected == 9:  # Reset to defaults
-                self._reset_cheats_to_defaults()
-            elif self.pause_selected == 10:  # Return to menu
-                self.app_state = "MENU"
-
-    def _adjust_cheat_value(self, key: int) -> None:
-        """Adjust evaluation values with left/right arrows."""
-        if not self.is_eval:
-            return
-
-        diff = -0.5 if key in (pygame.K_a, pygame.K_LEFT) else 0.5
-        idx = self.pause_selected
-
-        if idx == 1:
-            lvl_diff = -1 if diff < 0 else 1
-            max_lvl = self.config.get("levels")
-            new_lvl = self.game_state.current_level_idx + lvl_diff
-            # Allow cycling through levels without breaking bounds
-            if 0 <= new_lvl < max_lvl:
-                self.game_state.current_level_idx = new_lvl
-                self.game_state.state = State.LEVEL_TRANSITION
-        elif idx == 2:
-            self.invincible = not self.invincible
-        elif idx == 3:
-            self.player.speed = max(0.0, min(10.0, self.player.speed + diff))
-            self.custom_player_speed = self.player.speed
-        elif idx == 4:
-            self.blinky.speed = max(0.0, min(10.0, self.blinky.speed + diff))
-            self.custom_ghost_speeds['blinky'] = self.blinky.speed
-        elif idx == 5:
-            self.pinky.speed = max(0.0, min(10.0, self.pinky.speed + diff))
-            self.custom_ghost_speeds['pinky'] = self.pinky.speed
-        elif idx == 6:
-            self.inky.speed = max(0.0, min(10.0, self.inky.speed + diff))
-            self.custom_ghost_speeds['inky'] = self.inky.speed
-        elif idx == 7:
-            self.clyde.speed = max(0.0, min(10.0, self.clyde.speed + diff))
-            self.custom_ghost_speeds['clyde'] = self.clyde.speed
-        elif idx == 8:
-            lives_diff = -1 if diff < 0 else 1
-            self.game_state.lives = max(1, self.game_state.lives + lives_diff)
-
-    def _reset_cheats_to_defaults(self) -> None:
-        """Revert all cheat variables to their baseline configurations."""
-        self.invincible = False
-        self.custom_player_speed = None
-        self.custom_ghost_speeds.clear()
-
-        # Reset Pac-Man default speed (5.0)
-        self.player.speed = 5.0
-
-        # Recalculate original ghost speed for the current level
-        max_levels = self.config.get("levels")
-        start_speed = 1.0
-        end_speed = 5.2
-        if max_levels > 1:
-            speed_incr = (end_speed - start_speed) / (max_levels - 1)
-            cur_speed = start_speed + (
-                speed_incr * self.game_state.current_level_idx)
-        else:
-            cur_speed = start_speed
-
-        self.blinky.speed = cur_speed
-        self.pinky.speed = cur_speed
-        self.inky.speed = cur_speed
-        self.clyde.speed = cur_speed
-
-        # Revert to config default lives
-        self.game_state.lives = self.config.get("lives")
 
     def _run_name_input_screen(self) -> None:
         """Manages text input for highscore submission."""

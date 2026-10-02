@@ -1,11 +1,10 @@
-from pygame import image
-from os import environ
 import pygame
 import os
 import math
 from typing import Optional, cast
 from maze_loader import MazeLoader
 from player import Player, Direction
+from ui_config import UIConfig
 
 class Render:
     def __init__(self, max_width: int = 1260, max_heigth: int = 800) -> None:
@@ -13,7 +12,7 @@ class Render:
         pygame.init()
         try:
             pacman_icon = os.path.normpath(os.path.join(
-            os.path.dirname(__file__), "..", "assets", "pacman", "pacman-right", "1.png"
+            os.path.dirname(__file__), "..", "Assets", "pacman", "pacman-right", "1.png"
             ))
             loaded_img = pygame.image.load(pacman_icon)
             orig_w, orig_h = loaded_img.get_size()
@@ -35,49 +34,28 @@ class Render:
         self.last_dir: Direction = Direction.RIGHT  # fallback facing direction
         self.pacman_death: dict = {}
         self.selected_item = 0
-
+        self.ui = UIConfig()
+        
         self.grid_w: int = 0
         self.grid_h: int = 0
         self.offset_x: int = 0
         self.offset_y: int = 0
 
-        try:
-            _font_path = os.path.join(os.path.dirname(__file__), "..", "assets", "main-font", "Emulogic-zrEw.ttf")
-            self.font_regular = pygame.font.Font(os.path.normpath(_font_path), 16)
-            self.font_title = pygame.font.Font(os.path.normpath(_font_path), 48)
-            self.font_inst_title = pygame.font.Font(os.path.normpath(_font_path), 16)
-            self.font_inst_regular = pygame.font.Font(os.path.normpath(_font_path), 12)
-        except (pygame.error, FileNotFoundError) as err:
-            print("Warning: Custom font missing. Using default.")
-            self.font_regular = pygame.font.SysFont(None, 24)
-            self.font_title = pygame.font.SysFont(None, 64)
-            self.font_inst_title = pygame.font.SysFont(None, 24)
-            self.font_inst_regular = pygame.font.SysFont(None, 18)
-
     def setup_display(self, grid_w: int, grid_h: int) -> None:
         """Initialize display with grid dimensions."""
         self.grid_w = grid_w
         self.grid_h = grid_h
-
-        # Restore original max bounds to prevent permanent shrinking
-        self.max_w = 1260
-        self.max_h = 800
-
+        
         # Calculate initial tight-fitting window size
         tile_w = self.max_w // grid_w
         tile_h = (self.max_h - 50) // grid_h
         ts = max(1, min(tile_w, tile_h))
-
+        
         win_w = ts * grid_w
         win_h = (ts * grid_h) + 50
-
+        
         # Initial sizing
         self.resize(win_w, win_h)
-
-        # Reset max bounds again because resize() overwrites them
-        self.max_w = 1260
-        self.max_h = 800
-
         pygame.display.set_caption("Pac-Man")
 
     def resize(self, window_w: int, window_h: int) -> None:
@@ -85,25 +63,23 @@ class Render:
         self.max_w = window_w
         self.max_h = window_h
         self.screen = pygame.display.set_mode((window_w, window_h), pygame.RESIZABLE)
-
+        
         if self.grid_w > 0 and self.grid_h > 0:
             tile_w = window_w // self.grid_w
             tile_h = (window_h - 50) // self.grid_h  # Reserve 50px for HUD
             self.tile_size = max(1, min(tile_w, tile_h))
-
+            
             maze_w = self.tile_size * self.grid_w
             maze_h = self.tile_size * self.grid_h
-
+            
             # Center the maze
             self.offset_x = (window_w - maze_w) // 2
             self.offset_y = (window_h - 50 - maze_h) // 2
 
     def load_spritesheet(self, filepath: str) -> None:
-        """Safely load the spritesheet or fallback to basic shapes."""
+        """Load the main spritesheet used for ghost/entity sprites."""
         try:
-            self.sheet = pygame.image.load(filepath).convert()
-            self.sheet.set_colorkey((255, 0, 255))
-
+            self.sheet = pygame.image.load(filepath).convert_alpha()
         except (pygame.error, FileNotFoundError) as err:
             print(f"Warning: Could not load spritesheet '{filepath}': {err}")
             self.sheet = None
@@ -123,9 +99,9 @@ class Render:
         scaled.set_colorkey((255, 0, 255))
         return scaled
 
-    def load_ghost_sprites(self) -> None:
-        """Extract 16x16 ghost sprites from the spritesheet."""
-        self.ghost_sprites = {
+    def load_ghost_assets(self) -> None:
+        """Extract 16x16 ghost assets from the main-assetsheet."""
+        self.ghost_assets = {
             "Red": self.get_sprite(0, 4),
             "Pink": self.get_sprite(2, 4),
             "Cyan": self.get_sprite(4, 4),
@@ -135,7 +111,7 @@ class Render:
         }
 
     def load_pacman_death(self) -> None:
-        """Load Pac-Man death animation frames from spritesheet row 7, cols 0,2,4,..."""
+        """Load Pac-Man death animation frames from main-assetsheet row 7, cols 0,2,4,..."""
         frames = []
         col = 0
         while True:
@@ -255,7 +231,7 @@ class Render:
         frames = self.player_frames.get(self.last_dir) or self.player_frames.get(Direction.RIGHT)
         if frames:
             self.screen.blit(frames[self.anim_frame], (px, py))
-
+    
     def draw_pacman_death(self, grid_x: int, grid_y: int, frame_idx: int) -> None:
         """Draw one frame of the Pac-Man death animation."""
         frames = self.pacman_death.get("frames", [])
@@ -284,11 +260,11 @@ class Render:
         if state_val == 3:
             # Flashes between Flee (blue) and Flash (white) only when timer < 2.0s
             if f_timer < 2.0 and self.anim_frame % 2 == 0:
-                sprite = self.ghost_sprites.get("Flash")
+                sprite = self.ghost_assets.get("Flash")
             else:
-                sprite = self.ghost_sprites.get("Flee")
+                sprite = self.ghost_assets.get("Flee")
         else:
-            sprite = self.ghost_sprites.get(color)
+            sprite = self.ghost_assets.get(color)
 
         if sprite:
             self.screen.blit(sprite, (px, py + offset_y))
@@ -298,68 +274,23 @@ class Render:
                  is_eval: bool = False, cheat_str: str = ""
     ) -> None:
         """Draw basic game stats at the bottom of the screen."""
-        if not hasattr(self, 'font'):
-            self.font = pygame.font.SysFont(None, 24)
-
-        # Shift main HUD up slightly to make room for cheats if eval
-        if is_eval:
-            y_pos = self.screen.get_height() - 40
-        else:
-            y_pos = self.screen.get_height() - 35
+        y_pos = self.screen.get_height() - 40 if is_eval else self.screen.get_height() - 35
 
         hud_text = (f"Level: {level}/{total_levels}    Score: {score}     "
                     f"Lives: {lives}    Time: {int(time_left)}")
         if is_eval:
             hud_text += f"    Mode: {wave_mode}"
 
-        surf = self.font.render(hud_text, True, (255, 255, 255))
+        surf = self.ui.font_regular.render(hud_text, True, (255, 255, 255))
         self.screen.blit(surf, (20, y_pos))
 
         if is_eval and cheat_str:
-            cheat_surf = self.font.render(cheat_str, True, (255, 255, 0))
+            cheat_surf = self.ui.font_regular.render(cheat_str, True, (255, 255, 0))
             self.screen.blit(cheat_surf, (20, self.screen.get_height() - 20))
-
-    def draw_pause_menu(self, selected: int, labels: list[str]) -> None:
-        """Draws a semi-transparent pause overlay and options."""
-
-        overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()))
-        # overlay screen color
-        overlay.set_alpha(210)
-        overlay.fill((0, 0, 0))
-        self.screen.blit(overlay, (0, 0))
-
-        cx = self.screen.get_width() // 2
-        cy = self.screen.get_height() // 2
-
-        title = self.font_title.render("PAUSED", True, (255, 255, 0))
-        self.screen.blit(title, title.get_rect(center=(cx, cy - 200)))
-
-        NORMAL_COLOR  = (255, 255, 255)
-        SELECTED_COLOR = (70,191,238)
-        self._menu_rects = []
-
-        start_y = cy - 110
-
-        for i, label in enumerate(labels):
-            color = SELECTED_COLOR if i == selected else NORMAL_COLOR
-            surf = self.font_regular.render(label, True, color)
-            rect = surf.get_rect(center=(cx, start_y + (i * 35)))
-            self._menu_rects.append(rect)
-            self.screen.blit(surf, rect)
-
-            if i == selected:
-                mid_y = rect.centery
-                tip_x = rect.left - 15
-                pygame.draw.polygon(self.screen, color, [
-                    (tip_x - 10, mid_y - 7),
-                    (tip_x - 10, mid_y + 7),
-                    (tip_x, mid_y),
-                ])
 
     def draw_name_input(self, name: str, score: int, is_victory: bool) -> None:
         """Draw the post-game screen prompting for player name."""
         self.screen.fill((0, 0, 0))
-
 
         cx = self.screen.get_width() // 2
         cy = self.screen.get_height() // 2
@@ -367,12 +298,12 @@ class Render:
         msg = "VICTORY!" if is_victory else "GAME OVER"
         color = (0, 255, 0) if is_victory else (255, 0, 0)
 
-        title = self.font_title.render(msg, True, color)
-        score_txt = self.font_regular.render(f"Final Score: {score}", True, (255, 255, 255))
-        prompt = self.font_regular.render("Enter Name (Max 10 chars):", True, (255, 255, 255))
+        title = self.ui.font_title.render(msg, True, color)
+        score_txt = self.ui.font_regular.render(f"Final Score: {score}", True, (255, 255, 255))
+        prompt = self.ui.font_regular.render("Enter Name (Max 10 chars):", True, (255, 255, 255))
 
         # Name Input Box
-        name_txt = self.font_regular.render(name + "_", True, (70, 191, 238))
+        name_txt = self.ui.font_regular.render(name + "_", True, (70,191,238))
 
         self.screen.blit(title, title.get_rect(center=(cx, cy - 100)))
         self.screen.blit(score_txt, score_txt.get_rect(center=(cx, cy - 40)))
@@ -400,11 +331,11 @@ if __name__ == "__main__":
     # Load dot sprite (pacgum)
     _dot_path = os.path.join(
         os.path.dirname(__file__),
-        "..", "Sprites", "pacman-art", "other", "dot.png"
+        "..", "Assets", "pacman", "other", "dot.png"
     )
     render.load_dot(os.path.normpath(_dot_path))
     _player_base = os.path.normpath(os.path.join(
-        os.path.dirname(__file__), "..", "Sprites", "pacman-art"
+        os.path.dirname(__file__), "..", "Assets", "pacman"
     ))
     render.load_player_frames(_player_base)
     clock = pygame.time.Clock()

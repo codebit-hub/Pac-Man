@@ -1,4 +1,3 @@
-from typing_extensions import NoExtraItems
 import pygame
 import os
 import math

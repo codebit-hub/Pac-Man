@@ -1,6 +1,3 @@
-import math
-from re import S
-from re import A
 import pygame
 import sys
 import os
