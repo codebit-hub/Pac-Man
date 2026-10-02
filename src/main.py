@@ -4,7 +4,6 @@ import os
 import sys
 import random
 import pygame
-import math
 
 from config import ConfigManager
 from game_state import GameState, State
@@ -15,6 +14,8 @@ from ghost import GhostState, Blinky, Pinky, Inky, Clyde
 from renderer import Render
 from menu import Menu
 from highscore_screen import Highscorescreen
+from ui_config import UIConfig
+
 
 
 class Application:
@@ -23,17 +24,10 @@ class Application:
     def __init__(self, config_path: str) -> None:
         self.render = Render()
         self.config = ConfigManager()
+        self.ui = UIConfig()
 
         # Load config from argv
         self.config.load(config_path)
-        try:
-            _font_path = os.path.join(os.path.dirname(__file__), "..", "assets", "main-font", "Emulogic-zrEw.ttf")
-            self.font_regular = pygame.font.Font(os.path.normpath(_font_path), 16)
-            self.font_title = pygame.font.Font(os.path.normpath(_font_path), 26)
-        except (pygame.error, FileNotFoundError) as err:
-            print("Warning: Custom font missing. Using default.")
-            self.font_regular = pygame.font.SysFont(None, 24)
-            self.font_title = pygame.font.SysFont(None, 36)
 
         lvl_w = self.config.get("level")[0]["width"]
         lvl_h = self.config.get("level")[0]["height"]

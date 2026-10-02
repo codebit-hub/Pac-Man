@@ -54,6 +54,46 @@ class Highscorescreen:
             self.screen.blit(score_txt, score_rect)
 
         # Pulsing text
-        self.ui.draw_pulsing_nav(self.screen, "PRESS [ESC] TO RETURN OR CLICK", cx, bg_rect.bottom - 20)
+        self.ui.draw_pulsing_nav(self.screen, "PRESS [ESC] TO RETURN OR CLICK", cx, bg_rect.bottom + 20)
 
         pygame.display.flip()
+
+if __name__ == "__main__":
+    pygame.init()
+    screen = pygame.display.set_mode((800, 600), pygame.RESIZABLE)
+    pygame.display.set_caption("Highscore Screen Test")
+    
+    class MockHighscores:
+        def __init__(self):
+            self.scores = [
+                {"name": "PLAYER ONE", "score": 10000},
+                {"name": "PACMAN", "score": 8500},
+                {"name": "GHOST", "score": 7200},
+                {"name": "BLINKY", "score": 5000},
+                {"name": "INKY", "score": 4000},
+                {"name": "PINKY", "score": 3000},
+                {"name": "CLYDE", "score": 2000},
+                {"name": "NOOB", "score": 500},
+                {"name": "TEST", "score": 100},
+                {"name": "LOSER", "score": 0},
+            ]
+            
+    class MockApp:
+        def __init__(self):
+            self.app_state = "HIGHSCORES"
+            class MockRender:
+                def resize(self, w, h):
+                    global screen
+                    screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
+                    hs_screen.screen = screen
+            self.render = MockRender()
+            
+    mock_app = MockApp()
+    hs_screen = Highscorescreen(screen, MockHighscores())
+    
+    clock = pygame.time.Clock()
+    while mock_app.app_state == "HIGHSCORES":
+        hs_screen._run_highscore_screen(mock_app)
+        clock.tick(60)
+        
+    pygame.quit()

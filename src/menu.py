@@ -88,11 +88,11 @@ class Menu:
             self._menu_rects = []
             for i, label in enumerate(labels):
                 if i == 2 and i == self.selected_item:
-                    color = EXIT_COLOR
+                    color = self.ui.C_CLOSE_HOVER
                 elif i == self.selected_item:
-                    color = SELECTED_COLOR
+                    color = self.ui.C_TEXT_CYAN
                 else:
-                    color = NORMAL_COLOR
+                    color = self.ui.C_TEXT_WHITE
 
                 surf = self.ui.font_regular.render(label, True, color)
                 rect = surf.get_rect(center=(cx, cy - 30 + (i * 45)))
@@ -190,11 +190,11 @@ class Menu:
             # Added Pause Instructions
             y_pos = bg_rect.top + 310
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            pause_txt = self.ui.font_inst_regular.render("PAUSE: PRESS [P], [SPACE] OR [ESC]", True, self.ui.C_TEXT_WHITE)
+            pause_txt = self.ui.font_inst_regular.render("PAUSE: PRESS [P] OR [SPACE]", True, self.ui.C_TEXT_WHITE)
             self.screen.blit(pause_txt, pause_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 5)))
 
             # Pulsing ESC hint
-            self.ui.draw_pulsing_nav(self.screen, "PRESS [ESC] TO RETURN OR CLICK", cx, bg_rect.bottom - 20)
+            self.ui.draw_pulsing_nav(self.screen, "PRESS [ESC] TO RETURN OR CLICK", cx, bg_rect.bottom + 20)
 
 
 

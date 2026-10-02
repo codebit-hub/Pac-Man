@@ -12,7 +12,7 @@ class UIConfig:
         self.C_BOX_BG = (70, 191, 238)  # Pacman blue
         self.C_TEXT_WHITE = (255, 255, 255)
         self.C_TEXT_YELLOW = (255, 255, 0)
-        self.C_TEXT_CYAN = (0, 255, 255)
+        self.C_TEXT_CYAN = (70, 191, 238)
         
         self.C_CLOSE_NORMAL = (255, 255, 255)
         self.C_CLOSE_HOVER = (255, 80, 80)
@@ -37,7 +37,7 @@ class UIConfig:
             self.font_inst_title = pygame.font.SysFont(None, 24)
             self.font_inst_regular = pygame.font.SysFont(None, 18)
 
-    def draw_panel_bg(self, screen: pygame.Surface, cx: int, cy: int, w_ratio: float = 0.82, h_ratio: float = 0.82, max_w: int = 600, max_h: int = 420) -> pygame.Rect:
+    def draw_panel_bg(self, screen: pygame.Surface, cx: int, cy: int, w_ratio: float = 0.9, h_ratio: float = 0.95, max_w: int = 600, max_h: int = 420) -> pygame.Rect:
         """Draws the standard cyan UI panel and returns its Rect."""
         panel_w = min(int(screen.get_width() * w_ratio), max_w)
         panel_h = min(int(screen.get_height() * h_ratio), max_h)
