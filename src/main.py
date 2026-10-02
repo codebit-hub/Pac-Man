@@ -14,6 +14,7 @@ from player import Player, Direction
 from ghost import GhostState, Blinky, Pinky, Inky, Clyde
 from renderer import Render
 from menu import Menu
+from highscore_screen import Highscorescreen
 
 
 class Application:
@@ -45,6 +46,7 @@ class Application:
 
         self.game_state = GameState(self.config)
         self.highscores = HighScoreManager(self.config.get("highscore_filename"))
+        self.highscore_screen = Highscorescreen(self.screen, self.highscores)
 
         # Setup Vokotera's Menu and Monkey-Patch the selections
         self.menu = Menu(self.screen)
@@ -253,7 +255,7 @@ class Application:
                 self._run_name_input_screen()
 
             elif self.app_state == "HIGHSCORES":
-                self._run_highscore_screen()
+                self.highscore_screen._run_highscore_screen(self)
 
     def _run_game_frame(self, dt: float) -> None:
         """Execute one frame of gameplay."""
@@ -426,69 +428,6 @@ class Application:
         )
         self.render.render_frame()
 
-    def _run_highscore_screen(self) -> None:
-        """Draw Highscore leaderboard."""
-        cx = self.screen.get_width() // 2
-        cy = self.screen.get_height() // 2
-        for ev in pygame.event.get():
-            if ev.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif ev.type == pygame.VIDEORESIZE:
-                self.render.resize(ev.w, ev.h)
-            elif ev.type == pygame.KEYDOWN or ev.type == pygame.MOUSEBUTTONDOWN:
-                self.app_state = "MENU"
-
-        self.screen.fill((0, 0, 0))
-        panel_w = min(int(self.screen.get_width() * 0.82), 600)
-        panel_h = min(int(self.screen.get_height() * 0.82), 420)
-        bg_rect = pygame.Rect(0, 0, panel_w, panel_h)
-        bg_rect.center = (cx, cy)
-        pygame.draw.rect(self.screen, (70,191,238), bg_rect)
-        
-        # X button
-        mouse_pos = pygame.mouse.get_pos()
-        close_margin = 15
-        dummy_surf = self.font_regular.render("X", True, (255, 255, 255))
-        close_rect = dummy_surf.get_rect(topright=(bg_rect.right - close_margin, bg_rect.top + close_margin))
-        close_color = (255, 80, 80) if close_rect.collidepoint(mouse_pos) else (255, 255, 255)
-        close_surf = self.font_regular.render("X", True, close_color)
-        self.screen.blit(close_surf, close_rect)
-        
-        title = self.font_title.render("TOP 10 SCORES", True, (255,255,255))
-        self.screen.blit(title, title.get_rect(center=(cx, bg_rect.top + 40)))
-
-        start_y = bg_rect.top + 95
-        step_y = max(20, (panel_h - 110) // 10)
-
-        for i, hs in enumerate(self.highscores.scores):
-            if i == 0:
-                color = (255, 215, 0)  # Gold
-            elif i == 1:
-                color = (192, 192, 192)  # Silver
-            elif i == 2:
-                color = (205, 127, 50)  # Bronze
-            else:
-                color = (255, 255, 255)  # White
-
-            # Left align name (with rank)
-            name_txt = self.font_regular.render(f"{i+1}. {hs['name']}", True, color)
-            name_rect = name_txt.get_rect(midleft=(bg_rect.left + 40, start_y + (i * step_y)))
-            self.screen.blit(name_txt, name_rect)
-            
-            # Right align score
-            score_txt = self.font_regular.render(f"{hs['score']}", True, color)
-            score_rect = score_txt.get_rect(midright=(bg_rect.right - 40, start_y + (i * step_y)))
-            self.screen.blit(score_txt, score_rect)
-
-        current_time = pygame.time.get_ticks()
-        pulse = (math.sin(current_time * 0.005) + 1) / 2
-        alpha = int(100 + 155 * pulse)
-        nav_return = self.font_regular.render("PRESS [ESC] TO RETURN OR CLICK", True, (255, 255, 255))
-        nav_return.set_alpha(alpha)
-        self.screen.blit(nav_return, nav_return.get_rect(center=(cx, bg_rect.bottom - 20)))
-
-        pygame.display.flip()
 
 
 if __name__ == "__main__":
