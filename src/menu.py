@@ -33,7 +33,16 @@ class Menu:
             except Exception:
                 pass
 
-    def draw_main_menu(self, top_scores: list = None) -> None:
+        # Load volume-mute icon
+        mute_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "assets", "others", "volume-mute.png"))
+        try:
+            mute_img = pygame.image.load(mute_path).convert_alpha()
+            self._mute_icon = pygame.transform.scale(mute_img, (32, 32))
+        except Exception:
+            self._mute_icon = None
+        self._mute_rect: pygame.Rect | None = None
+
+    def draw_main_menu(self, top_scores: list = None, audio=None) -> None:
         self.screen.fill((0, 0, 0))
 
         # Helper function for getting assets (used by both states)
@@ -124,6 +133,9 @@ class Menu:
 
             self._instruction_rect = self._menu_rects[2]
 
+            # Draw mute icon in top-right corner
+            self._draw_mute_icon(audio)
+
         elif self.state == "instructions":
             cx = self.screen.get_width() // 2
             cy = self.screen.get_height() // 2
@@ -191,7 +203,31 @@ class Menu:
 
 
 
-    def handle_event(self, event: pygame.event.Event) -> None:
+    def _draw_mute_icon(self, audio=None) -> None:
+        """Draw volume-mute icon in top-right corner; red tint when muted."""
+        if self._mute_icon is None:
+            return
+        margin = 12
+        icon_size = 32
+        x = self.screen.get_width() - icon_size - margin
+        y = margin
+        self._mute_rect = pygame.Rect(x, y, icon_size, icon_size)
+
+        is_muted = audio.muted if audio else False
+
+        icon = self._mute_icon.copy()
+        if is_muted:
+            # Apply red tint (adds red to black pixels)
+            icon.fill((220, 50, 50), special_flags=pygame.BLEND_RGB_ADD)
+            self.screen.blit(icon, (x, y))
+            # Draw a diagonal strike-through line
+            pygame.draw.line(self.screen, (220, 50, 50), (x + 4, y + icon_size - 4), (x + icon_size - 4, y + 4), 3)
+        else:
+            # Apply white tint (adds white to black pixels)
+            icon.fill((255, 255, 255), special_flags=pygame.BLEND_RGB_ADD)
+            self.screen.blit(icon, (x, y))
+
+    def handle_event(self, event: pygame.event.Event, audio=None) -> None:
         """Handle keyboard and mouse input for menu navigation."""
         NUM_ITEMS = 3
 
@@ -201,6 +237,8 @@ class Menu:
                     self.selected_item = (self.selected_item + 1) % NUM_ITEMS
                 elif event.key in (pygame.K_UP, pygame.K_w):
                     self.selected_item = (self.selected_item - 1) % NUM_ITEMS
+                elif event.key == pygame.K_m and audio:
+                    audio.toggle_mute()
                 elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
                     self._activate_item(self.selected_item + 1)
                 elif event.key == pygame.K_SPACE:
@@ -217,6 +255,10 @@ class Menu:
                         self.selected_item = i
                         break
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                # Check mute icon click
+                if self._mute_rect and self._mute_rect.collidepoint(event.pos) and audio:
+                    audio.toggle_mute()
+                    return
                 for i, rect in enumerate(self._menu_rects):
                     if rect.collidepoint(event.pos):
                         self._activate_item(i + 1)

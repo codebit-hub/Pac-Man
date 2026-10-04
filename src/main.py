@@ -268,10 +268,10 @@ class Application:
                         sys.exit()
                     elif ev.type == pygame.VIDEORESIZE:
                         self.render.resize(ev.w, ev.h)
-                    self.menu.handle_event(ev)
+                    self.menu.handle_event(ev, self.audio)
                 # Pass top 4 scores to the menu
                 top_4 = self.highscores.scores[:4]
-                self.menu.draw_main_menu(top_4)
+                self.menu.draw_main_menu(top_4, self.audio)
                 pygame.display.flip()
 
             elif self.app_state == "PLAYING":

@@ -31,6 +31,9 @@ class AudioManager:
         self.bgm_paths: dict[str, str] = {}
         self.current_bgm: str | None = None
 
+        # Mute state
+        self.muted: bool = False
+
         self._load_assets()
 
     def _get_path(self, filename: str) -> str:
@@ -103,5 +106,17 @@ class AudioManager:
             pygame.mixer.music.stop()
             self.current_bgm = None
 
+        except pygame.error:
+            pass
+
+    def toggle_mute(self) -> None:
+        """Toggle mute state for all audio (BGM and SFX)."""
+        self.muted = not self.muted
+        vol = 0.0 if self.muted else 1.0
+        try:
+            pygame.mixer.music.set_volume(vol)
+            for sound in self.sfx.values():
+                if sound:
+                    sound.set_volume(vol)
         except pygame.error:
             pass

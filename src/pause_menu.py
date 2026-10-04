@@ -12,10 +12,12 @@ class PauseMenu:
 
     def run(self, app) -> None:
         """Draw and handle pause screen waiting for keypress."""
+        mute_label = f"Mute Sound: < {'ON' if app.audio.muted else 'OFF'} >"
         if app.is_eval:
             labels = [
                 "Resume Game",
                 "Return to main menu",
+                mute_label,
                 "-- CHEATS --",
                 f"Level: < {app.game_state.current_level_idx + 1} >",
                 f"Invincibility: < {'ON' if app.invincible else 'OFF'} >",
@@ -27,9 +29,9 @@ class PauseMenu:
                 f"Lives: < {app.game_state.lives} >",
                 "Reset to defaults",
             ]
-            separator_idx = 2
+            separator_idx = 3
         else:
-            labels = ["Resume Game", "Return to main menu"]
+            labels = ["Resume Game", "Return to main menu", mute_label]
             separator_idx = -1
 
         for ev in pygame.event.get():
@@ -47,6 +49,8 @@ class PauseMenu:
                     self.selected_item = (self.selected_item + 1) % len(labels)
                     if app.is_eval and self.selected_item == separator_idx:
                         self.selected_item = separator_idx + 1
+                elif ev.key == pygame.K_m:
+                    app.audio.toggle_mute()
                 elif ev.key == pygame.K_SPACE:
                     app.app_state = "PLAYING"
                     app.audio.stop_bgm()
@@ -65,7 +69,7 @@ class PauseMenu:
                     for i, rect in enumerate(self._menu_rects):
                         if rect.collidepoint(mouse_pos) and i != separator_idx:
                             self.selected_item = i
-                            if app.is_eval and 3 <= i <= 10:
+                            if app.is_eval and 4 <= i <= 12:
                                 self._adjust_cheat_value(app, pygame.K_RIGHT)
                             else:
                                 self._execute_pause_action(app)
@@ -131,7 +135,14 @@ class PauseMenu:
                 self._menu_rects.append(sep_surf.get_rect(center=(cx, start_y + (i * 35))))
                 continue
 
-            color = self.ui.C_TEXT_CYAN if i == self.selected_item else (self.ui.C_CLOSE_HOVER if "OFF" in label else self.ui.C_TEXT_WHITE)
+            is_mute_item = label.startswith("Mute Sound")
+            is_muted_on = is_mute_item and "ON" in label
+            if i == self.selected_item:
+                color = (255, 80, 80) if is_muted_on else self.ui.C_TEXT_CYAN
+            elif is_muted_on:
+                color = (220, 50, 50)
+            else:
+                color = self.ui.C_TEXT_WHITE
             surf = self.ui.font_regular.render(label, True, color)
             rect = surf.get_rect(center=(cx, start_y + (i * 35)))
             self._menu_rects.append(rect)
@@ -148,13 +159,15 @@ class PauseMenu:
             app.audio.stop_bgm()
         elif self.selected_item == 1:
             app.app_state = "MENU"
+        elif self.selected_item == 2:
+            app.audio.toggle_mute()
         elif app.is_eval:
-            if self.selected_item == 3:
+            if self.selected_item == 4:
                 app.game_state.state = State.LEVEL_TRANSITION
                 app.app_state = "PLAYING"
-            elif self.selected_item == 4:
+            elif self.selected_item == 5:
                 app.invincible = not app.invincible
-            elif self.selected_item == 11:
+            elif self.selected_item == 12:
                 self._reset_cheats_to_defaults(app)
 
     def _adjust_cheat_value(self, app, key: int) -> None:
@@ -162,31 +175,31 @@ class PauseMenu:
             return
         diff = -0.5 if key in (pygame.K_a, pygame.K_LEFT) else 0.5
         idx = self.selected_item
-        if idx == 3:
+        if idx == 4:
             lvl_diff = -1 if diff < 0 else 1
             max_lvl = app.config.get("levels")
             new_lvl = app.game_state.current_level_idx + lvl_diff
             if 0 <= new_lvl < max_lvl:
                 app.game_state.current_level_idx = new_lvl
                 app.game_state.state = State.LEVEL_TRANSITION
-        elif idx == 4:
-            app.invincible = not app.invincible
         elif idx == 5:
+            app.invincible = not app.invincible
+        elif idx == 6:
             app.player.speed = max(0.0, min(10.0, app.player.speed + diff))
             app.custom_player_speed = app.player.speed
-        elif idx == 6:
+        elif idx == 7:
             app.blinky.speed = max(0.0, min(10.0, app.blinky.speed + diff))
             app.custom_ghost_speeds['blinky'] = app.blinky.speed
-        elif idx == 7:
+        elif idx == 8:
             app.pinky.speed = max(0.0, min(10.0, app.pinky.speed + diff))
             app.custom_ghost_speeds['pinky'] = app.pinky.speed
-        elif idx == 8:
+        elif idx == 9:
             app.inky.speed = max(0.0, min(10.0, app.inky.speed + diff))
             app.custom_ghost_speeds['inky'] = app.inky.speed
-        elif idx == 9:
+        elif idx == 10:
             app.clyde.speed = max(0.0, min(10.0, app.clyde.speed + diff))
             app.custom_ghost_speeds['clyde'] = app.clyde.speed
-        elif idx == 10:
+        elif idx == 11:
             lives_diff = -1 if diff < 0 else 1
             app.game_state.lives = max(1, app.game_state.lives + lives_diff)
 
