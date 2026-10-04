@@ -16,6 +16,7 @@ from menu import Menu
 from highscore_screen import Highscorescreen
 from audio import AudioManager
 from pause_menu import PauseMenu
+from ui_config import UIConfig
 
 
 class Application:
@@ -25,6 +26,7 @@ class Application:
         self.render = Render()
         self.config = ConfigManager()
         self.audio = AudioManager()
+        self.ui = UIConfig()
 
         # Load config from argv
         self.config.load(config_path)
@@ -58,6 +60,9 @@ class Application:
         # Track manual speed changes to persist them across level/death reloads
         self.custom_player_speed = None
         self.custom_ghost_speeds = {}
+
+        # Floating score popups: list of [text, pixel_x, pixel_y, time_left]
+        self.floating_texts: list = []
 
         # Store the original menu activate method
         self._og_activate = self.menu._activate_item
@@ -126,6 +131,7 @@ class Application:
 
         # Update the existing renderer to dynamically scale the tile size
         self.render.setup_display(grid_w, grid_h)
+
 
         base = os.path.dirname(__file__)
         self.render.load_dot(os.path.normpath(
@@ -301,9 +307,7 @@ class Application:
                 elif ev.key in (pygame.K_d, pygame.K_RIGHT):
                     self.player.set_direction(Direction.RIGHT)
                 elif ev.key in (
-                    pygame.K_p, pygame.K_SPACE, pygame.K_ESCAPE, pygame.K_BACKSPACE):
-                    if ev.key == pygame.K_ESCAPE and self.render.is_fullscreen:
-                        self.render.set_fullscreen(False)
+                    pygame.K_p, pygame.K_SPACE, pygame.K_BACKSPACE):
                     self.app_state = "PAUSE"
                     self.pause_selected = 0
                     self.intro_timer = 0.0
@@ -371,6 +375,10 @@ class Application:
                     if g.state != GhostState.FLEE:
                         self.game_state.eat_ghost()
                         self.audio.play_sfx("eat_ghost")
+                        pts_text = f"{self.config.get('points_per_ghost')}"
+                        pixel_x = self.render.offset_x + px * self.render.tile_size
+                        pixel_y = self.render.offset_y + py * self.render.tile_size
+                        self.floating_texts.append([pts_text, pixel_x, pixel_y, 0.8])
                         #self.audio.play_sfx("respawn")
                 elif g.state in (GhostState.CHASE, GhostState.SCATTER):
                     if not self.invincible:
@@ -441,6 +449,17 @@ class Application:
             self.is_eval,
             cheat_str
         )
+
+        # Draw floating score popups
+        still_alive = []
+        for entry in self.floating_texts:
+            txt, fx, fy, ttl = entry
+            surf = self.ui.font_hud.render(txt, True, self.ui.C_TEXT_WHITE)
+            self.render.screen.blit(surf, (fx, fy))
+            entry[3] -= dt
+            if entry[3] > 0:
+                still_alive.append(entry)
+        self.floating_texts = still_alive
 
         self.render.render_frame()
 

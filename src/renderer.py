@@ -45,36 +45,48 @@ class Render:
         """Initialize display with grid dimensions."""
         self.grid_w = grid_w
         self.grid_h = grid_h
-        
-        # Calculate initial tight-fitting window size
+
+        # If a window already exists (e.g. fullscreen set in menu), keep its size
+        # and just recalculate tile size and offsets for the new grid.
+        if hasattr(self, 'screen') and self.screen is not None:
+            cur_w = self.screen.get_width()
+            cur_h = self.screen.get_height()
+            tile_w = cur_w // grid_w
+            tile_h = (cur_h - 50) // grid_h
+            self.tile_size = max(1, min(tile_w, tile_h))
+            maze_w = self.tile_size * grid_w
+            maze_h = self.tile_size * grid_h
+            self.offset_x = (cur_w - maze_w) // 2
+            self.offset_y = (cur_h - 50 - maze_h) // 2
+            return
+
+        # First launch — calculate a tight-fitting window size
         tile_w = self.max_w // grid_w
         tile_h = (self.max_h - 50) // grid_h
         ts = max(1, min(tile_w, tile_h))
-        
+
         win_w = ts * grid_w
         win_h = (ts * grid_h) + 50
-        
-        # Initial sizing
+
         self.resize(win_w, win_h)
         pygame.display.set_caption("Pac-Man")
+
 
     def resize(self, window_w: int, window_h: int) -> None:
         """Recalculate tile size and center offsets upon resize."""
         self.max_w = window_w
         self.max_h = window_h
         self.screen = pygame.display.set_mode((window_w, window_h), pygame.RESIZABLE)
-        
+
         if self.grid_w > 0 and self.grid_h > 0:
             tile_w = window_w // self.grid_w
-            tile_h = (window_h - 50) // self.grid_h  # Reserve 50px for HUD
+            tile_h = (window_h - 50) // self.grid_h
             self.tile_size = max(1, min(tile_w, tile_h))
-            
             maze_w = self.tile_size * self.grid_w
             maze_h = self.tile_size * self.grid_h
-            
-            # Center the maze
             self.offset_x = (window_w - maze_w) // 2
             self.offset_y = (window_h - 50 - maze_h) // 2
+
 
     def load_spritesheet(self, filepath: str) -> None:
         """Load the main spritesheet used for ghost/entity sprites."""
@@ -281,12 +293,13 @@ class Render:
         if is_eval:
             hud_text += f"    Mode: {wave_mode}"
 
-        surf = self.ui.font_regular.render(hud_text, True, (255, 255, 255))
-        self.screen.blit(surf, (20, y_pos))
+        surf = self.ui.font_hud.render(hud_text, True, (255, 255, 255))
+        cx = self.screen.get_width() // 2
+        self.screen.blit(surf, surf.get_rect(center=(cx, y_pos + surf.get_height() // 2)))
 
         if is_eval and cheat_str:
-            cheat_surf = self.ui.font_regular.render(cheat_str, True, (255, 255, 0))
-            self.screen.blit(cheat_surf, (20, self.screen.get_height() - 20))
+            cheat_surf = self.ui.font_hud.render(cheat_str, True, (255, 255, 0))
+            self.screen.blit(cheat_surf, cheat_surf.get_rect(center=(cx, self.screen.get_height() - 15)))
 
     def draw_name_input(self, name: str, score: int, is_victory: bool) -> None:
         """Draw the post-game screen prompting for player name."""

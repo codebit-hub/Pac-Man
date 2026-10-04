@@ -28,6 +28,7 @@ class UIConfig:
             self.font_title_small = pygame.font.Font(os.path.normpath(_font_path), 26)
             self.font_inst_title = pygame.font.Font(os.path.normpath(_font_path), 16)
             self.font_inst_regular = pygame.font.Font(os.path.normpath(_font_path), 12)
+            self.font_hud = pygame.font.Font(os.path.normpath(_font_path), 8)
         except (pygame.error, FileNotFoundError):
             print("Warning: Custom font missing. Using default.")
             self.font_regular = pygame.font.SysFont(None, 24)
@@ -35,6 +36,7 @@ class UIConfig:
             self.font_title_small = pygame.font.SysFont(None, 36)
             self.font_inst_title = pygame.font.SysFont(None, 24)
             self.font_inst_regular = pygame.font.SysFont(None, 18)
+            self.font_hud = pygame.font.SysFont(None, 12)
 
     def draw_panel_bg(self, screen: pygame.Surface, cx: int, cy: int, w_ratio: float = 0.9, h_ratio: float = 0.95, max_w: int = 600, max_h: int = 420) -> pygame.Rect:
         """Draws the standard cyan UI panel and returns its Rect."""

@@ -62,10 +62,6 @@ class Menu:
         clyde = get_sp(6, 8)
 
         if self.state == "main":
-            NORMAL_COLOR  = (255, 255, 255)
-            SELECTED_COLOR = (70,191,238)
-            EXIT_COLOR = (208, 62, 25)
-
             labels = [
                 "View Highscores",
                 "Instructions",
