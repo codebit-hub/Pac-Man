@@ -83,7 +83,7 @@ class Menu:
             # 1. Draw Title
             title = self.ui.font_title.render("Pac-Man", True, (253, 255, 0))
             self.screen.blit(title, title.get_rect(center=(cx - 20, cy - 200)))
-            self.ui.draw_pulsing_nav(self.screen, "Push SPACE for play", cx - 5, cy - 100, font=self.ui.font_regular)
+            self.ui.draw_pulsing_nav(self.screen, "Push SPACE for play", cx - 5, cy - 100)
 
 
             # 2. Draw Menu Items & Pointer

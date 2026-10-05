@@ -10,6 +10,7 @@ class Render:
     def __init__(self, max_width: int = 1260, max_heigth: int = 800) -> None:
         """Initialize the renderer with safe max window bounds."""
         pygame.init()
+        self.ui = UIConfig()
         try:
             pacman_icon = os.path.normpath(os.path.join(
             os.path.dirname(__file__), "..", "Assets", "pacman", "pacman-right", "1.png"
@@ -34,8 +35,7 @@ class Render:
         self.last_dir: Direction = Direction.RIGHT  # fallback facing direction
         self.pacman_death: dict = {}
         self.selected_item = 0
-        self.ui = UIConfig()
-        
+
         self.grid_w: int = 0
         self.grid_h: int = 0
         self.offset_x: int = 0
