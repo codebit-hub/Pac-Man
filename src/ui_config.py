@@ -21,6 +21,9 @@ class UIConfig:
         self.C_SILVER = (192, 192, 192)
         self.C_BRONZE = (205, 127, 50)
 
+        self.GAME_CYAN = (70, 191, 238)
+        self.GAME_RBLUE = (50, 100, 255)
+
         # Fonts
         try:
             _font_path = os.path.normpath(
@@ -102,3 +105,16 @@ class UIConfig:
         nav_return = self.font_regular.render(text, True, self.C_TEXT_WHITE)
         nav_return.set_alpha(alpha)
         screen.blit(nav_return, nav_return.get_rect(center=(cx, cy)))
+
+    def load_icon(self) -> None:
+        try:
+            pacman_icon = os.path.normpath(os.path.join(
+            os.path.dirname(__file__), "..", "Assets", "pacman", "pacman-right", "1.png"
+            ))
+            loaded_img = pygame.image.load(pacman_icon)
+            orig_w, orig_h = loaded_img.get_size()
+            padded_img = pygame.Surface((orig_w * 2, orig_h * 2), pygame.SRCALPHA)
+            padded_img.blit(loaded_img, (orig_w // 2, orig_h // 2))
+            pygame.display.set_icon(padded_img)
+        except (FileNotFoundError, pygame.error):
+            print("Warning: Couldn't load pacman icon")

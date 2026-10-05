@@ -1,54 +1,55 @@
 import pygame
 import os
 import math
+
 from typing import Optional, cast
 from maze_loader import MazeLoader
 from player import Player, Direction
 from ui_config import UIConfig
 
+
 class Render:
     def __init__(self, max_width: int = 1260, max_heigth: int = 800) -> None:
         """Initialize the renderer with safe max window bounds."""
+        # 1. Initialization and UI
         pygame.init()
         self.ui = UIConfig()
-        try:
-            pacman_icon = os.path.normpath(os.path.join(
-            os.path.dirname(__file__), "..", "Assets", "pacman", "pacman-right", "1.png"
-            ))
-            loaded_img = pygame.image.load(pacman_icon)
-            orig_w, orig_h = loaded_img.get_size()
-            padded_img = pygame.Surface((orig_w * 2, orig_h * 2), pygame.SRCALPHA)
-            padded_img.blit(loaded_img, (orig_w // 2, orig_h // 2))
-            pygame.display.set_icon(padded_img)
-        except (FileNotFoundError, pygame.error):
-            print("Warning: Couldn't load pacman icon")
+        self.ui.load_icon()
+
+        # 2. Sizes of window
         self.max_w = max_width
         self.max_h = max_heigth
-        self.tile_size: int = 16
-        self.sheet = None
-        self.dot_img: Optional[pygame.Surface] = None
-        self._powergum_tick: int = 0
-        self.player_frames: dict = {}
-        self.anim_frame: int = 0
-        self.anim_timer: float = 0.0
-        self.ANIM_SPEED: float = 0.1  # seconds per frame
-        self.last_dir: Direction = Direction.RIGHT  # fallback facing direction
-        self.pacman_death: dict = {}
-        self.selected_item = 0
 
+        # 3. Grid
+        self.tile_size: int = 16
         self.grid_w: int = 0
         self.grid_h: int = 0
         self.offset_x: int = 0
         self.offset_y: int = 0
+
+        # 4. Textures and graphics
+        self.sheet: Optional[pygame.Surface] = None
+        self.dot_img: Optional[pygame.Surface] = None
+        self.player_frames: dict = {}
+        self.pacman_death: dict = {}
+
+        # 5. Animations
+        self.ANIM_SPEED: float = 0.1
+        self.anim_timer: float = 0.0
+        self.anim_frame: int = 0
+        self._powergum_tick: int = 0
+
+        # 6. Game and UI States
+        self.last_dir: Direction = Direction.RIGHT  # fallback facing direction
+        self.selected_item = 0
 
     def setup_display(self, grid_w: int, grid_h: int) -> None:
         """Initialize display with grid dimensions."""
         self.grid_w = grid_w
         self.grid_h = grid_h
 
-        # If a window already exists (e.g. fullscreen set in menu), keep its size
-        # and just recalculate tile size and offsets for the new grid.
-        if hasattr(self, 'screen') and self.screen is not None:
+        if (hasattr(self, 'screen')
+                and self.screen is not None):
             cur_w = self.screen.get_width()
             cur_h = self.screen.get_height()
             tile_w = cur_w // grid_w
@@ -60,7 +61,7 @@ class Render:
             self.offset_y = (cur_h - 50 - maze_h) // 2
             return
 
-        # First launch — calculate a tight-fitting window size
+        # First launch
         tile_w = self.max_w // grid_w
         tile_h = (self.max_h - 50) // grid_h
         ts = max(1, min(tile_w, tile_h))
@@ -71,12 +72,11 @@ class Render:
         self.resize(win_w, win_h)
         pygame.display.set_caption("Pac-Man")
 
-
     def resize(self, window_w: int, window_h: int) -> None:
         """Recalculate tile size and center offsets upon resize."""
-        self.max_w = window_w
-        self.max_h = window_h
-        self.screen = pygame.display.set_mode((window_w, window_h), pygame.RESIZABLE)
+        self.max_w, self.max_h = window_w, window_h
+        size = (window_w, window_h)
+        self.screen = pygame.display.set_mode(size, pygame.RESIZABLE)
 
         if self.grid_w > 0 and self.grid_h > 0:
             tile_w = window_w // self.grid_w
@@ -87,7 +87,6 @@ class Render:
             self.offset_x = (window_w - maze_w) // 2
             self.offset_y = (window_h - 50 - maze_h) // 2
 
-
     def load_spritesheet(self, filepath: str) -> None:
         """Load the main spritesheet used for ghost/entity sprites."""
         try:
@@ -96,34 +95,38 @@ class Render:
             print(f"Warning: Could not load spritesheet '{filepath}': {err}")
             self.sheet = None
 
-    def get_sprite(self, col: int, row: int, base: int = 16) -> Optional[pygame.Surface]:
-        """Extract a 32x32 sprite using a 16px grid map, then scale it."""
+    def get_sprite(self, col: int, row: int) -> Optional[pygame.Surface]:
+        """Extract each entity in correct form"""
         if self.sheet is None:
             return None
-        offset_x = 1
-        offset_y = -0.3
-        rect = pygame.Rect((col * base) + offset_x, (row * base) + offset_y, base * 2, base * 2)
+
+        base = 16
+        x = (col * base) + 1
+        y = (row * base) + 0
+        rect = pygame.Rect(x, y, base * 2, base * 2)
+
         try:
             surf = cast(pygame.Surface, self.sheet.subsurface(rect))
         except ValueError:
             return None
+
         scaled = pygame.transform.scale(surf, (self.tile_size, self.tile_size))
         scaled.set_colorkey((255, 0, 255))
         return scaled
 
     def load_ghost_assets(self) -> None:
-        """Extract 16x16 ghost assets from the main-assetsheet."""
+        """Extract ghost assets from the main-spiresheet."""
         self.ghost_assets = {
             "Red": self.get_sprite(0, 4),
             "Pink": self.get_sprite(2, 4),
             "Cyan": self.get_sprite(4, 4),
             "Orange": self.get_sprite(6, 4),
-            "Flee": self.get_sprite(10, 4),     # Blue ghost is on row 5
-            "Flash": self.get_sprite(10, 6),   # White ghost is on row 5
+            "Flee": self.get_sprite(10, 4),
+            "Flash": self.get_sprite(10, 6),
         }
 
     def load_pacman_death(self) -> None:
-        """Load Pac-Man death animation frames from main-assetsheet row 7, cols 0,2,4,..."""
+        """Load Pac-Man death animation frames from main-spiresheet."""
         frames = []
         col = 0
         while True:
@@ -138,24 +141,27 @@ class Render:
         """Draw dark fill for wall tile. Borders drawn by draw_walls_grid."""
         if not self.screen:
             return
-        fill = (70,191,238) if is_logo else (0,0,0)
+        fill = self.ui.GAME_CYAN if is_logo else self.ui.C_BG
         px = x * self.tile_size + self.offset_x
         py = y * self.tile_size + self.offset_y
-        pygame.draw.rect(self.screen, fill, pygame.Rect(
-            px, py, self.tile_size, self.tile_size
-        ))
+        pygame.draw.rect(self.screen, fill,
+                         (px, py, self.tile_size, self.tile_size))
 
     def draw_walls_grid(self, grid: list) -> None:
-        """Draw wall borders only on edges that face a corridor (not wall-to-wall)."""
+        """Draw wall borders only on edges that face a corridor"""
         if not self.screen:
             return
         WALL_VALS = {0, 4}
         rows = len(grid)
-        cols = len(grid[0]) if rows else 0
+        cols = len(grid[0])
         ts = self.tile_size
         lw = max(1, ts // 5)
 
-        def is_wall(gx, gy):
+        surf = self.screen
+        draw_line = pygame.draw.line
+
+        def is_wall(gx: int, gy: int) -> bool:
+            "Returns if its in game map or its wall"
             if gx < 0 or gy < 0 or gy >= rows or gx >= cols:
                 return True
             return grid[gy][gx] in WALL_VALS
@@ -164,23 +170,26 @@ class Render:
             for gx, cell in enumerate(row):
                 if cell not in WALL_VALS:
                     continue
-                color = (50, 100, 255) if cell == 4 else (70,191,238)
+                color = self.ui.GAME_RBLUE if cell == 4 else self.ui.GAME_CYAN
                 px = gx * ts + self.offset_x
                 py = gy * ts + self.offset_y
+                px2 = px + ts
+                py2 = py + ts
                 if not is_wall(gx, gy - 1):  # top
-                    pygame.draw.line(self.screen, color, (px, py), (px + ts, py), lw)
+                    draw_line(surf, color, (px, py), (px2, py), lw)
                 if not is_wall(gx, gy + 1):  # bottom
-                    pygame.draw.line(self.screen, color, (px, py + ts), (px + ts, py + ts), lw)
+                    draw_line(surf, color, (px, py + ts), (px2, py2), lw)
                 if not is_wall(gx - 1, gy):  # left
-                    pygame.draw.line(self.screen, color, (px, py), (px, py + ts), lw)
+                    draw_line(surf, color, (px, py), (px, py2), lw)
                 if not is_wall(gx + 1, gy):  # right
-                    pygame.draw.line(self.screen, color, (px + ts, py), (px + ts, py + ts), lw)
+                    draw_line(surf, color, (px + ts, py), (px2, py2), lw)
 
     def load_dot(self, filepath: str) -> None:
-        """Load the pacgum dot sprite, or set to None for fallback drawing."""
+        """Load the pacgum dot sprite"""
         try:
             img = pygame.image.load(filepath).convert_alpha()
-            self.dot_img = pygame.transform.scale(img, (self.tile_size, self.tile_size))
+            self.dot_img = pygame.transform.scale(
+                img, (self.tile_size, self.tile_size))
         except (pygame.error, FileNotFoundError) as err:
             print(f"Warning: Could not load dot sprite '{filepath}': {err}")
             self.dot_img = None
@@ -189,24 +198,26 @@ class Render:
         """Load all directional animation frames for pacman."""
         dir_folders = {
             Direction.RIGHT: "pacman-right",
-            Direction.LEFT:  "pacman-left",
-            Direction.UP:    "pacman-up",
-            Direction.DOWN:  "pacman-down",
+            Direction.LEFT: "pacman-left",
+            Direction.UP: "pacman-up",
+            Direction.DOWN: "pacman-down",
         }
         for direction, folder in dir_folders.items():
             frames = []
             for i in range(1, 4):
-                path = os.path.normpath(os.path.join(base_dir, folder, f"{i}.png"))
+                path = os.path.normpath(
+                    os.path.join(base_dir, folder, f"{i}.png"))
                 try:
                     img = pygame.image.load(path).convert_alpha()
-                    img = pygame.transform.scale(img, (self.tile_size, self.tile_size))
+                    tile_size = self.tile_size
+                    img = pygame.transform.scale(img, (tile_size, tile_size))
                     frames.append(img)
                 except (pygame.error, FileNotFoundError) as err:
                     print(f"Warning: Could not load '{path}': {err}")
             self.player_frames[direction] = frames
 
     def draw_pacgum(self, x: int, y: int) -> None:
-        """Draw a pacgum (small dot) at grid position (x, y)."""
+        """Draw a pacgum (small dot) at grid position."""
         px = x * self.tile_size + self.offset_x
         py = y * self.tile_size + self.offset_y
         if self.dot_img:
@@ -215,7 +226,7 @@ class Render:
             cx = px + self.tile_size // 2
             cy = py + self.tile_size // 2
             r = max(2, self.tile_size // 6)
-            pygame.draw.circle(self.screen, (255, 220, 50), (cx, cy), r)
+            pygame.draw.circle(self.screen, self.ui.C_TEXT_WHITE, (cx, cy), r)
 
     def draw_powergum(self, x: int, y: int) -> None:
         """Draw a power pellet (big pulsing dot) at grid position (x, y)."""
@@ -224,27 +235,29 @@ class Render:
         r = max(3, int(self.tile_size * pulse * 0.5))
         cx = x * self.tile_size + self.offset_x + self.tile_size // 2
         cy = y * self.tile_size + self.offset_y + self.tile_size // 2
-        pygame.draw.circle(self.screen, (255, 255, 255), (cx, cy), r)
+        pygame.draw.circle(self.screen, self.ui.C_TEXT_WHITE, (cx, cy), r)
 
-    def draw_player(self, grid_x: int, grid_y: int, direction: Direction, delta_time: float) -> None:
+    def draw_player(self, grid_x: int, grid_y: int,
+                    direction: Direction, delta_time: float) -> None:
         """Draw pacman at grid position with directional animation."""
         px = grid_x * self.tile_size + self.offset_x
         py = grid_y * self.tile_size + self.offset_y
 
-        # Advance animation timer
         self.anim_timer += delta_time
         if self.anim_timer >= self.ANIM_SPEED:
             self.anim_timer = 0.0
             self.anim_frame = (self.anim_frame + 1) % 3
 
-        # Pick the right direction's frames — remember last non-NONE direction
         if direction != Direction.NONE:
             self.last_dir = direction
-        frames = self.player_frames.get(self.last_dir) or self.player_frames.get(Direction.RIGHT)
+        fallback = self.player_frames.get(Direction.RIGHT)
+        frames = self.player_frames.get(self.last_dir, fallback)
+
         if frames:
             self.screen.blit(frames[self.anim_frame], (px, py))
-    
-    def draw_pacman_death(self, grid_x: int, grid_y: int, frame_idx: int) -> None:
+
+    def draw_pacman_death(self, grid_x: int, grid_y: int,
+                          frame_idx: int) -> None:
         """Draw one frame of the Pac-Man death animation."""
         frames = self.pacman_death.get("frames", [])
         if not frames:
@@ -265,12 +278,9 @@ class Render:
         px = x * self.tile_size + self.offset_x
         py = y * self.tile_size + self.offset_y
 
-        # Simple bobbing animation using the global tick
         offset_y = 2 if self.anim_frame % 2 == 0 else 0
 
-        # State 3 is FLEE, State 4 is EATEN
         if state_val == 3:
-            # Flashes between Flee (blue) and Flash (white) only when timer < 2.0s
             if f_timer < 2.0 and self.anim_frame % 2 == 0:
                 sprite = self.ghost_assets.get("Flash")
             else:
@@ -283,27 +293,30 @@ class Render:
 
     def draw_hud(self, score: int, lives: int, time_left: float,
                  level: int, total_levels: int, wave_mode: str,
-                 is_eval: bool = False, cheat_str: str = ""
-    ) -> None:
+                 is_eval: bool = False, cheat_str: str = "") -> None:
         """Draw basic game stats at the bottom of the screen."""
-        y_pos = self.screen.get_height() - 40 if is_eval else self.screen.get_height() - 35
+        sh = self.screen.get_height()
+        cx = self.screen.get_width() // 2
+        y_pos = sh - 40 if is_eval else sh - 35
 
         hud_text = (f"Level: {level}/{total_levels}    Score: {score}     "
                     f"Lives: {lives}    Time: {int(time_left)}")
         if is_eval:
             hud_text += f"    Mode: {wave_mode}"
 
-        surf = self.ui.font_hud.render(hud_text, True, (255, 255, 255))
-        cx = self.screen.get_width() // 2
-        self.screen.blit(surf, surf.get_rect(center=(cx, y_pos + surf.get_height() // 2)))
+        surf = self.ui.font_hud.render(hud_text, True, self.ui.C_TEXT_WHITE)
+        rect = surf.get_rect(center=(cx, y_pos + surf.get_height() // 2))
+        self.screen.blit(surf, rect)
 
         if is_eval and cheat_str:
-            cheat_surf = self.ui.font_hud.render(cheat_str, True, (255, 255, 0))
-            self.screen.blit(cheat_surf, cheat_surf.get_rect(center=(cx, self.screen.get_height() - 15)))
+            color = self.ui.C_TEXT_YELLOW
+            c_surf = self.ui.font_hud.render(cheat_str, True, color)
+            c_rect = c_surf.get_rect(center=(cx, sh - 15))
+            self.screen.blit(c_surf, c_rect)
 
     def draw_name_input(self, name: str, score: int, is_victory: bool) -> None:
         """Draw the post-game screen prompting for player name."""
-        self.screen.fill((0, 0, 0))
+        self.screen.fill(self.ui.C_BG)
 
         cx = self.screen.get_width() // 2
         cy = self.screen.get_height() // 2
@@ -312,11 +325,15 @@ class Render:
         color = (0, 255, 0) if is_victory else (255, 0, 0)
 
         title = self.ui.font_title.render(msg, True, color)
-        score_txt = self.ui.font_regular.render(f"Final Score: {score}", True, (255, 255, 255))
-        prompt = self.ui.font_regular.render("Enter Name (Max 10 chars):", True, (255, 255, 255))
+        score_msg = f"Final Score: {score}"
+        color = self.ui.C_TEXT_WHITE
+        score_txt = self.ui.font_regular.render(score_msg, True, color)
+        prompt_msg = "Enter Name (Max 10 chars):"
+        prompt = self.ui.font_regular.render(prompt_msg, True, color)
 
         # Name Input Box
-        name_txt = self.ui.font_regular.render(name + "_", True, (70,191,238))
+        color = self.ui.C_TEXT_CYAN
+        name_txt = self.ui.font_regular.render(name + "_", True, color)
 
         self.screen.blit(title, title.get_rect(center=(cx, cy - 100)))
         self.screen.blit(score_txt, score_txt.get_rect(center=(cx, cy - 40)))
@@ -379,13 +396,14 @@ if __name__ == "__main__":
                 elif cell == 0:
                     render.draw_wall(x, y)  # Wall
                 elif cell == 4:
-                    render.draw_wall(x, y, is_logo=True)  # Logo Wall (The '42')
+                    render.draw_wall(x, y, is_logo=True)
                 elif cell == 2:
                     render.draw_pacgum(x, y)  # Pacgum
                 elif cell == 3:
                     render.draw_powergum(x, y)  # Powergum
 
-        render.draw_player(player.grid_x, player.grid_y, player.current_dir, delta_time)
+        render.draw_player(player.grid_x, player.grid_y,
+                           player.current_dir, delta_time)
 
         render.render_frame()
 
