@@ -23,6 +23,7 @@ class UIConfig:
 
         self.GAME_CYAN = (70, 191, 238)
         self.GAME_RBLUE = (50, 100, 255)
+        self.GAME_PATH = (20, 20, 40)
 
         # Fonts
         try:

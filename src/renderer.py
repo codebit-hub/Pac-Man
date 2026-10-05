@@ -1,8 +1,8 @@
 import pygame
 import os
 import math
-
 from typing import Optional, cast
+
 from maze_loader import MazeLoader
 from player import Player, Direction
 from ui_config import UIConfig
