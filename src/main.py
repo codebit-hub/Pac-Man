@@ -315,79 +315,84 @@ class Application:
                     self.audio.play_bgm("pause")
                     return
 
-        # 1. Update State
-        self.game_state.update(dt)
-        self._update_wave_timers(dt)
-
-        # Check for Level Transition or Death BEFORE moving entities
-        if self.game_state.state == State.LEVEL_TRANSITION:
-            self._load_level()
-            return
-        elif self.game_state.state in (State.GAME_OVER, State.VICTORY):
-            # Transition to name input
-            self.input_name = ""
-            self.app_state = "NAME_INPUT"
-
-            # Victory/Game Over audio loops
-            if self.game_state.state == State.VICTORY:
-                self.audio.play_bgm("victory")
-            else:
+        if self.intro_timer > 0:
+            self.intro_timer -= dt
+            if self.audio.current_bgm is not None:
                 self.audio.stop_bgm()
-                self.audio.play_sfx("game_over")
-            return
-
-        # If entity's speed is 0,
-        # division time_per_tile = 1.0 / self.speed means
-        # dividing by 0 which crashes the game. If 0,
-        # we dont update the frame
-        if self.player.speed > 0:
-            self.player.update(dt, self.grid)
-
-        for g in self.ghosts:
-            if g.speed > 0:
-                old_state = g.state
-
-                g.update(
-                    dt, self.grid, self.player.grid_x, self.player.grid_y,
-                    self.player.current_dir, self.blinky.grid_x, self.blinky.grid_y
-                )
-
-                # If the ghost was EATEN but is now active again, it just respawned
-                if old_state == GhostState.EATEN and g.state != GhostState.EATEN:
-                    self.audio.play_sfx("respawn")
-
-        # 2. Consumption & Collisions
-        px, py = self.player.grid_x, self.player.grid_y
-        if self.grid[py][px] == 2:
-            self.grid[py][px] = 1
-            self.game_state.collect_pacgums()
-            self.audio.play_sfx("waka")
-        elif self.grid[py][px] == 3:
-            self.grid[py][px] = 1
-            self.game_state.collect_super_pacgum()
-            self.audio.play_sfx("power")
-
-        for g in self.ghosts:
-            if px == g.grid_x and py == g.grid_y:
-                if g.state == GhostState.FLEE:
-                    g.die()
-                    # Only play sounds if die() changed the state
-                    if g.state != GhostState.FLEE:
-                        self.game_state.eat_ghost()
-                        self.audio.play_sfx("eat_ghost")
-                        pts_text = f"{self.config.get('points_per_ghost')}"
-                        pixel_x = self.render.offset_x + px * self.render.tile_size
-                        pixel_y = self.render.offset_y + py * self.render.tile_size
-                        self.floating_texts.append([pts_text, pixel_x, pixel_y, 0.8])
-                        #self.audio.play_sfx("respawn")
-                elif g.state in (GhostState.CHASE, GhostState.SCATTER):
-                    if not self.invincible:
-                        self.game_state.lose_life()
-                        if self.game_state.state != State.GAME_OVER:
-                            self._play_death_anim(px, py)
-                            self.player.respawn()
-                            self._init_ghosts()
-                        return
+        else:
+            # 1. Update State
+            self.game_state.update(dt)
+            self._update_wave_timers(dt)
+    
+            # Check for Level Transition or Death BEFORE moving entities
+            if self.game_state.state == State.LEVEL_TRANSITION:
+                self._load_level()
+                return
+            elif self.game_state.state in (State.GAME_OVER, State.VICTORY):
+                # Transition to name input
+                self.input_name = ""
+                self.app_state = "NAME_INPUT"
+    
+                # Victory/Game Over audio loops
+                if self.game_state.state == State.VICTORY:
+                    self.audio.play_bgm("victory")
+                else:
+                    self.audio.stop_bgm()
+                    self.audio.play_sfx("game_over")
+                return
+    
+            # If entity's speed is 0,
+            # division time_per_tile = 1.0 / self.speed means
+            # dividing by 0 which crashes the game. If 0,
+            # we dont update the frame
+            if self.player.speed > 0:
+                self.player.update(dt, self.grid)
+    
+            for g in self.ghosts:
+                if g.speed > 0:
+                    old_state = g.state
+    
+                    g.update(
+                        dt, self.grid, self.player.grid_x, self.player.grid_y,
+                        self.player.current_dir, self.blinky.grid_x, self.blinky.grid_y
+                    )
+    
+                    # If the ghost was EATEN but is now active again, it just respawned
+                    if old_state == GhostState.EATEN and g.state != GhostState.EATEN:
+                        self.audio.play_sfx("respawn")
+    
+            # 2. Consumption & Collisions
+            px, py = self.player.grid_x, self.player.grid_y
+            if self.grid[py][px] == 2:
+                self.grid[py][px] = 1
+                self.game_state.collect_pacgums()
+                self.audio.play_sfx("waka")
+            elif self.grid[py][px] == 3:
+                self.grid[py][px] = 1
+                self.game_state.collect_super_pacgum()
+                self.audio.play_sfx("power")
+    
+            for g in self.ghosts:
+                if px == g.grid_x and py == g.grid_y:
+                    if g.state == GhostState.FLEE:
+                        g.die()
+                        # Only play sounds if die() changed the state
+                        if g.state != GhostState.FLEE:
+                            self.game_state.eat_ghost()
+                            self.audio.play_sfx("eat_ghost")
+                            pts_text = f"{self.config.get('points_per_ghost')}"
+                            pixel_x = self.render.offset_x + px * self.render.tile_size
+                            pixel_y = self.render.offset_y + py * self.render.tile_size
+                            self.floating_texts.append([pts_text, pixel_x, pixel_y, 0.8])
+                    elif g.state in (GhostState.CHASE, GhostState.SCATTER):
+                        if not self.invincible:
+                            self.game_state.lose_life()
+                            if self.game_state.state != State.GAME_OVER:
+                                self._play_death_anim(px, py)
+                                self.player.respawn()
+                                self._init_ghosts()
+                                self.intro_timer = 2.0
+                            return
 
         # 3. Draw Frame
         self.render.screen.fill((20, 20, 40))
@@ -416,12 +421,7 @@ class Application:
         if self.game_state.is_frightened:
             mode_text = "FLEE"
 
-        if self.intro_timer > 0:
-            self.intro_timer -= dt
-            # Force the pause music to stop if we unpaused during the intro delay
-            if self.audio.current_bgm is not None:
-                self.audio.stop_bgm()
-        else:
+        if self.intro_timer <= 0:
             if self.game_state.is_frightened:
                 self.audio.play_bgm("flee")
             else:
@@ -460,6 +460,12 @@ class Application:
             if entry[3] > 0:
                 still_alive.append(entry)
         self.floating_texts = still_alive
+
+        if self.intro_timer > 0:
+            ready_surf = self.ui.font_title.render("READY!", True, self.ui.C_TEXT_YELLOW)
+            cx = self.render.screen.get_width() // 2
+            cy = self.render.screen.get_height() // 2 + 30
+            self.render.screen.blit(ready_surf, ready_surf.get_rect(center=(cx, cy)))
 
         self.render.render_frame()
 
