@@ -78,7 +78,7 @@ class PauseMenu:
                     for i, rect in enumerate(self._menu_rects):
                         if rect.collidepoint(mouse_pos) and i != separator_idx:
                             self.selected_item = i
-                            if (app.is_eval and 4 <= i <= 12) or i == 2:
+                            if app.is_eval and i in (4, 6, 7, 8, 9, 10, 11):
                                 font = self.ui.font_regular
                                 prefix = labels[i].split("<", 1)[0]
 
@@ -86,7 +86,7 @@ class PauseMenu:
                                 arr_w = font.size("<")[0] // 2
                                 mx = mouse_pos[0]
 
-                                left_x = left_x = rect.left + pref_w + arr_w
+                                left_x = rect.left + pref_w + arr_w
                                 right_x = rect.right - arr_w
 
                                 if abs(mx - left_x) < abs(mx - right_x):
@@ -179,7 +179,7 @@ class PauseMenu:
             is_muted_on = is_mute_item and "ON" in label
             color_muted = self.ui.C_CLOSE_HOVER
             if i == self.selected_item:
-                color = color_muted if is_muted_on else self.ui.C_TEXT_CYAN
+                color = color_muted if is_muted_on else self.ui.C_TEXT_PURPLE
             elif is_muted_on:
                 color = color_muted
             else:

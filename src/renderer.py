@@ -110,9 +110,10 @@ class Render:
             self.dot_img = pygame.transform.scale(self.orig_dot_img, (self.tile_size, self.tile_size))
         
         if hasattr(self, 'orig_player_frames') and self.orig_player_frames:
+            p_size = max(1, int(self.tile_size * 0.8))
             for dir_key, orig_frames in self.orig_player_frames.items():
                 self.player_frames[dir_key] = [
-                    pygame.transform.scale(f, (self.tile_size, self.tile_size))
+                    pygame.transform.scale(f, (p_size, p_size))
                     for f in orig_frames
                 ]
                 
@@ -143,7 +144,8 @@ class Render:
         except ValueError:
             return None
 
-        scaled = pygame.transform.scale(surf, (self.tile_size, self.tile_size))
+        p_size = max(1, int(self.tile_size * 0.8))
+        scaled = pygame.transform.scale(surf, (p_size, p_size))
         scaled.set_colorkey((255, 0, 255))
         return scaled
 
@@ -174,7 +176,7 @@ class Render:
         """Draw dark fill for wall tile. Borders drawn by draw_walls_grid."""
         if not self.screen:
             return
-        fill = self.ui.GAME_CYAN if is_logo else self.ui.C_BG
+        fill = self.ui.GAME_PURPLE if is_logo else self.ui.C_BG
         px = x * self.tile_size + self.offset_x
         py = y * self.tile_size + self.offset_y
         pygame.draw.rect(self.screen, fill,
@@ -203,7 +205,7 @@ class Render:
             for gx, cell in enumerate(row):
                 if cell not in WALL_VALS:
                     continue
-                color = self.ui.GAME_RBLUE if cell == 4 else self.ui.GAME_CYAN
+                color = self.ui.GAME_PURPLE
                 px = gx * ts + self.offset_x
                 py = gy * ts + self.offset_y
                 px2 = px + ts
@@ -246,7 +248,8 @@ class Render:
                 try:
                     img = pygame.image.load(path).convert_alpha()
                     frames.append(img)
-                    scaled = pygame.transform.scale(img, (self.tile_size, self.tile_size))
+                    p_size = max(1, int(self.tile_size * 0.8))
+                    scaled = pygame.transform.scale(img, (p_size, p_size))
                     scaled_frames.append(scaled)
                 except (pygame.error, FileNotFoundError) as err:
                     print(f"Warning: Could not load '{path}': {err}")
@@ -291,7 +294,9 @@ class Render:
         frames = self.player_frames.get(self.last_dir, fallback)
 
         if frames:
-            self.screen.blit(frames[self.anim_frame], (px, py))
+            img = frames[self.anim_frame]
+            offset_center = (self.tile_size - img.get_width()) // 2
+            self.screen.blit(img, (px + offset_center, py + offset_center))
 
     def draw_pacman_death(self, grid_x: int, grid_y: int,
                           frame_idx: int) -> None:
@@ -302,7 +307,11 @@ class Render:
         frame_idx = max(0, min(frame_idx, len(frames) - 1))
         px = grid_x * self.tile_size + self.offset_x
         py = grid_y * self.tile_size + self.offset_y
-        self.screen.blit(frames[frame_idx], (px, py))
+        
+        img = frames[frame_idx]
+        offset_center = (self.tile_size - img.get_width()) // 2
+        self.screen.blit(img, (px + offset_center, py + offset_center))
+
 
     def render_frame(self) -> None:
         """Flip the display buffer to the monitor."""
@@ -326,7 +335,8 @@ class Render:
             sprite = self.ghost_assets.get(color)
 
         if sprite:
-            self.screen.blit(sprite, (px, py + offset_y))
+            offset_center = (self.tile_size - sprite.get_width()) // 2
+            self.screen.blit(sprite, (px + offset_center, py + offset_y + offset_center))
 
     def draw_hud(self, score: int, lives: int, time_left: float,
                  level: int, total_levels: int, wave_mode: str,
@@ -369,7 +379,7 @@ class Render:
         prompt = self.ui.font_regular.render(prompt_msg, True, color)
 
         # Name Input Box
-        color = self.ui.C_TEXT_CYAN
+        color = self.ui.C_TEXT_PURPLE
         name_txt = self.ui.font_regular.render(name + "_", True, color)
 
         self.screen.blit(title, title.get_rect(center=(cx, cy - 100)))

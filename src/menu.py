@@ -114,7 +114,7 @@ class Menu:
                 if i == 2 and i == self.selected_item:
                     color = self.ui.C_CLOSE_HOVER
                 elif i == self.selected_item:
-                    color = self.ui.C_TEXT_CYAN
+                    color = self.ui.C_TEXT_PURPLE
                 else:
                     color = self.ui.C_TEXT_WHITE
 
@@ -221,7 +221,7 @@ class Menu:
             self.screen.blit(pause_txt, pause_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 5)))
 
             # Pulsing ESC hint
-            self.ui.draw_pulsing_nav(self.screen, "PRESS [ESC] TO RETURN OR CLICK", cx, bg_rect.bottom + 20)
+            self.ui.draw_pulsing_nav(self.screen, "PRESS [ENTER] TO RETURN", cx, bg_rect.bottom + 20)
 
 
 
