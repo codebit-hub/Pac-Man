@@ -25,34 +25,14 @@ class UIConfig:
         self.GAME_PATH = (20, 20, 40)
 
         # Fonts
-        try:
-            _font_path = os.path.normpath(
-                os.path.join(
-                    os.path.dirname(__file__),
-                    "..", "assets", "main-font", "Emulogic-zrEw.ttf"))
-
-            def load_font(size: int) -> pygame.font.Font:
-                return pygame.font.Font(_font_path, size)
-
-            self.font_regular = load_font(16)
-            self.font_title = load_font(48)
-            self.font_title_small = load_font(26)
-            self.font_inst_title = load_font(16)
-            self.font_inst_regular = load_font(12)
-            self.close_font = load_font(12)
-            self.font_hud = load_font(8)
-            self.pause_regular = load_font(16)
-
-        except (pygame.error, FileNotFoundError):
-            print("Warning: Custom font missing. Using default.")
-            self.font_regular = pygame.font.SysFont(None, 24)
-            self.font_title = pygame.font.SysFont(None, 64)
-            self.font_title_small = pygame.font.SysFont(None, 36)
-            self.font_inst_title = pygame.font.SysFont(None, 24)
-            self.font_inst_regular = pygame.font.SysFont(None, 18)
-            self.close_font = pygame.font.SysFont(None, 12)
-            self.font_hud = pygame.font.SysFont(None, 12)
-            self.pause_regular = pygame.font.SysFont(None, 16)
+        self.font_regular = pygame.font.SysFont(None, 24)
+        self.font_title = pygame.font.SysFont(None, 64)
+        self.font_title_small = pygame.font.SysFont(None, 36)
+        self.font_inst_title = pygame.font.SysFont(None, 24)
+        self.font_inst_regular = pygame.font.SysFont(None, 18)
+        self.close_font = pygame.font.SysFont(None, 12)
+        self.font_hud = pygame.font.SysFont(None, 20)
+        self.pause_regular = pygame.font.SysFont(None, 16)
 
     def draw_panel_bg(self, screen: pygame.Surface,
                       cx: int, cy: int) -> pygame.Rect:
@@ -61,7 +41,8 @@ class UIConfig:
         panel_h = min(int(screen.get_height() * 0.95), 420)
         bg_rect = pygame.Rect(0, 0, panel_w, panel_h)
         bg_rect.center = (cx, cy)
-        pygame.draw.rect(screen, self.C_BOX_BG, bg_rect)
+        from renderer import MLXUtils
+        MLXUtils.draw_rect(screen, self.C_BOX_BG, bg_rect)
         return bg_rect
 
     def draw_close_button(self, screen: pygame.Surface,
@@ -92,20 +73,21 @@ class UIConfig:
         """Draws a standard triangle bullet point."""
         c = color if color else self.C_TEXT_WHITE
         mid_y = y if is_centered else y + 15
-        pygame.draw.polygon(screen, c, [
+        from renderer import MLXUtils
+        MLXUtils.draw_triangle(screen, c, 
             (x - 10, mid_y - 7),
             (x - 10, mid_y + 7),
-            (x, mid_y),
-        ])
+            (x, mid_y)
+        )
 
     def draw_pulsing_nav(self, screen: pygame.Surface, text: str,
                          cx: int, cy: int) -> None:
         """Draws pulsing text at the given center coordinates."""
         current_time = pygame.time.get_ticks()
         pulse = (math.sin(current_time * 0.005) + 1) / 2
-        alpha = int(100 + 155 * pulse)
-        nav_return = self.font_regular.render(text, True, self.C_TEXT_WHITE)
-        nav_return.set_alpha(alpha)
+        brightness = int(100 + 155 * pulse)
+        color = (brightness, brightness, brightness)
+        nav_return = self.font_regular.render(text, True, color)
         screen.blit(nav_return, nav_return.get_rect(center=(cx, cy)))
 
     def load_icon(self) -> None:

@@ -8,6 +8,146 @@ from player import Player, Direction
 from ui_config import UIConfig
 
 
+class MLXUtils:
+    """Utility class for MLX-compliant operations."""
+
+    @staticmethod
+    def scale_image(
+            surf: pygame.Surface, new_w: int, new_h: int
+    ) -> pygame.Surface:
+        """
+        Nearest-neighbor image scale using pixel-level.
+        """
+        src_w = surf.get_width()
+        src_h = surf.get_height()
+        if src_w == 0 or src_h == 0 or new_w <= 0 or new_h <= 0:
+            return pygame.Surface((max(1, new_w), max(1, new_h)))
+        if src_w == new_w and src_h == new_h:
+            return surf.copy()
+        has_alpha = bool(surf.get_flags() & pygame.SRCALPHA)
+        result = pygame.Surface(
+            (new_w, new_h), pygame.SRCALPHA if has_alpha else 0
+        )
+        for dst_y in range(new_h):
+            src_y = min(int(dst_y * src_h / new_h), src_h - 1)
+            for dst_x in range(new_w):
+                src_x = min(int(dst_x * src_w / new_w), src_w - 1)
+                result.set_at((dst_x, dst_y), surf.get_at((src_x, src_y)))
+        colorkey = surf.get_colorkey()
+        if colorkey is not None:
+            result.set_colorkey(colorkey)
+        return result
+
+    @staticmethod
+    def colorize_icon(surf: pygame.Surface, add_r: int, add_g: int, add_b: int) -> pygame.Surface:
+        """
+        Pixel-by-pixel color tinting.
+        MLX-compliant replacement for pygame.BLEND_RGB_ADD.
+        Equivalent to looping mlx_get_data_addr and manipulating RGB values.
+        """
+        result = surf.copy()
+        for x in range(result.get_width()):
+            for y in range(result.get_height()):
+                r, g, b, a = result.get_at((x, y))
+                if a > 0:
+                    result.set_at((x, y), (
+                        min(255, r + add_r),
+                        min(255, g + add_g),
+                        min(255, b + add_b),
+                        a
+                    ))
+        return result
+
+    @staticmethod
+    def draw_rect(surf: pygame.Surface, color: tuple, rect: pygame.Rect, width: int = 0):
+        """MLX-compliant rectangle drawing (pixel by pixel)."""
+        x_start, y_start, w, h = int(rect.x), int(rect.y), int(rect.w), int(rect.h)
+        if width == 0:
+            for y in range(max(0, y_start), min(surf.get_height(), y_start + h)):
+                for x in range(max(0, x_start), min(surf.get_width(), x_start + w)):
+                    surf.set_at((x, y), color)
+        else:
+            MLXUtils.draw_line(surf, color, (x_start, y_start), (x_start+w-1, y_start), width)
+            MLXUtils.draw_line(surf, color, (x_start, y_start+h-1), (x_start+w-1, y_start+h-1), width)
+            MLXUtils.draw_line(surf, color, (x_start, y_start), (x_start, y_start+h-1), width)
+            MLXUtils.draw_line(surf, color, (x_start+w-1, y_start), (x_start+w-1, y_start+h-1), width)
+
+    @staticmethod
+    def draw_line(surf: pygame.Surface, color: tuple, start: tuple, end: tuple, width: int = 1):
+        """MLX-compliant line drawing (Bresenham's algorithm)."""
+        x0, y0 = int(start[0]), int(start[1])
+        x1, y1 = int(end[0]), int(end[1])
+        dx = abs(x1 - x0)
+        dy = -abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx + dy
+        while True:
+            for wx in range(width):
+                for wy in range(width):
+                    px, py = x0 + wx, y0 + wy
+                    if 0 <= px < surf.get_width() and 0 <= py < surf.get_height():
+                        surf.set_at((px, py), color)
+            if x0 == x1 and y0 == y1:
+                break
+            e2 = 2 * err
+            if e2 >= dy:
+                err += dy
+                x0 += sx
+            if e2 <= dx:
+                err += dx
+                y0 += sy
+
+    @staticmethod
+    def draw_circle(surf: pygame.Surface, color: tuple, center: tuple, radius: int, width: int = 0):
+        """MLX-compliant circle drawing."""
+        cx, cy = int(center[0]), int(center[1])
+        r2 = radius * radius
+        if width == 0:
+            for y in range(-radius, radius + 1):
+                for x in range(-radius, radius + 1):
+                    if x*x + y*y <= r2:
+                        px, py = cx + x, cy + y
+                        if 0 <= px < surf.get_width() and 0 <= py < surf.get_height():
+                            surf.set_at((px, py), color)
+        else:
+            in_r2 = (radius - width) * (radius - width)
+            for y in range(-radius, radius + 1):
+                for x in range(-radius, radius + 1):
+                    d2 = x*x + y*y
+                    if in_r2 <= d2 <= r2:
+                        px, py = cx + x, cy + y
+                        if 0 <= px < surf.get_width() and 0 <= py < surf.get_height():
+                            surf.set_at((px, py), color)
+
+    @staticmethod
+    def draw_triangle(surf: pygame.Surface, color: tuple, p1: tuple, p2: tuple, p3: tuple):
+        """MLX-compliant filled triangle drawing."""
+        min_x = int(min(p1[0], p2[0], p3[0]))
+        max_x = int(max(p1[0], p2[0], p3[0]))
+        min_y = int(min(p1[1], p2[1], p3[1]))
+        max_y = int(max(p1[1], p2[1], p3[1]))
+        
+        min_x = max(0, min_x)
+        min_y = max(0, min_y)
+        max_x = min(surf.get_width() - 1, max_x)
+        max_y = min(surf.get_height() - 1, max_y)
+        
+        def sign(p1, p2, p3):
+            return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
+            
+        for y in range(min_y, max_y + 1):
+            for x in range(min_x, max_x + 1):
+                d1 = sign((x, y), p1, p2)
+                d2 = sign((x, y), p2, p3)
+                d3 = sign((x, y), p3, p1)
+                has_neg = (d1 < 0) or (d2 < 0) or (d3 < 0)
+                has_pos = (d1 > 0) or (d2 > 0) or (d3 > 0)
+                if not (has_neg and has_pos):
+                    surf.set_at((x, y), color)
+
+
+
 class Render:
     def __init__(self, max_width: int = 1260, max_heigth: int = 800) -> None:
         """Initialize the renderer with safe max window bounds."""
@@ -107,13 +247,13 @@ class Render:
     def reload_scales(self) -> None:
         """Rescale all textures based on current tile_size."""
         if hasattr(self, 'orig_dot_img') and self.orig_dot_img:
-            self.dot_img = pygame.transform.scale(self.orig_dot_img, (self.tile_size, self.tile_size))
+            self.dot_img = MLXUtils.scale_image(self.orig_dot_img, self.tile_size, self.tile_size)
         
         if hasattr(self, 'orig_player_frames') and self.orig_player_frames:
             p_size = max(1, int(self.tile_size * 0.8))
             for dir_key, orig_frames in self.orig_player_frames.items():
                 self.player_frames[dir_key] = [
-                    pygame.transform.scale(f, (p_size, p_size))
+                    MLXUtils.scale_image(f, p_size, p_size)
                     for f in orig_frames
                 ]
                 
@@ -145,7 +285,7 @@ class Render:
             return None
 
         p_size = max(1, int(self.tile_size * 0.8))
-        scaled = pygame.transform.scale(surf, (p_size, p_size))
+        scaled = MLXUtils.scale_image(surf, p_size, p_size)
         scaled.set_colorkey((255, 0, 255))
         return scaled
 
@@ -179,8 +319,8 @@ class Render:
         fill = self.ui.GAME_PURPLE if is_logo else self.ui.C_BG
         px = x * self.tile_size + self.offset_x
         py = y * self.tile_size + self.offset_y
-        pygame.draw.rect(self.screen, fill,
-                         (px, py, self.tile_size, self.tile_size))
+        MLXUtils.draw_rect(self.screen, fill,
+                           pygame.Rect(px, py, self.tile_size, self.tile_size))
 
     def draw_walls_grid(self, grid: list) -> None:
         """Draw wall borders only on edges that face a corridor"""
@@ -193,7 +333,7 @@ class Render:
         lw = max(1, ts // 5)
 
         surf = self.screen
-        draw_line = pygame.draw.line
+        draw_line = MLXUtils.draw_line
 
         def is_wall(gx: int, gy: int) -> bool:
             "Returns if its in game map or its wall"
@@ -223,8 +363,8 @@ class Render:
         """Load the pacgum dot sprite"""
         try:
             self.orig_dot_img = pygame.image.load(filepath).convert_alpha()
-            self.dot_img = pygame.transform.scale(
-                self.orig_dot_img, (self.tile_size, self.tile_size))
+            self.dot_img = MLXUtils.scale_image(
+                self.orig_dot_img, self.tile_size, self.tile_size)
         except (pygame.error, FileNotFoundError) as err:
             print(f"Warning: Could not load dot sprite '{filepath}': {err}")
             self.dot_img = None
@@ -249,7 +389,7 @@ class Render:
                     img = pygame.image.load(path).convert_alpha()
                     frames.append(img)
                     p_size = max(1, int(self.tile_size * 0.8))
-                    scaled = pygame.transform.scale(img, (p_size, p_size))
+                    scaled = MLXUtils.scale_image(img, p_size, p_size)
                     scaled_frames.append(scaled)
                 except (pygame.error, FileNotFoundError) as err:
                     print(f"Warning: Could not load '{path}': {err}")
@@ -266,7 +406,7 @@ class Render:
             cx = px + self.tile_size // 2
             cy = py + self.tile_size // 2
             r = max(2, self.tile_size // 6)
-            pygame.draw.circle(self.screen, self.ui.C_TEXT_WHITE, (cx, cy), r)
+            MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (cx, cy), r)
 
     def draw_powergum(self, x: int, y: int) -> None:
         """Draw a power pellet (big pulsing dot) at grid position (x, y)."""
@@ -275,7 +415,7 @@ class Render:
         r = max(3, int(self.tile_size * pulse * 0.5))
         cx = x * self.tile_size + self.offset_x + self.tile_size // 2
         cy = y * self.tile_size + self.offset_y + self.tile_size // 2
-        pygame.draw.circle(self.screen, self.ui.C_TEXT_WHITE, (cx, cy), r)
+        MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (cx, cy), r)
 
     def draw_player(self, grid_x: int, grid_y: int,
                     direction: Direction, delta_time: float) -> None:

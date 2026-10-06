@@ -147,9 +147,11 @@ class PauseMenu:
 
     def draw_overlay(self, labels: list[str], separator_idx: int) -> None:
         width, height = self.screen.get_width(), self.screen.get_height()
-        overlay = pygame.Surface((width, height))
-        overlay.set_alpha(210)
-        overlay.fill((0, 0, 0))
+        # MLX Compliance: Instead of set_alpha (no equivalent), 
+        # we create an image with an alpha channel and fill its pixels with ARGB color.
+        # This is equivalent to mlx_new_image + mlx_get_data_addr + filling with (A<<24 | R<<16 | G<<8 | B).
+        overlay = pygame.Surface((width, height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 210))
         self.screen.blit(overlay, (0, 0))
 
         cx = self.screen.get_width() // 2
