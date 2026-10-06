@@ -59,7 +59,7 @@ class AudioManager:
             "respawn": "14_ghost_respawning.wav",
             "death": "15_fail_pacman_dies.wav",
             "game_over": "17_game_over.wav",
-            "tick": "19_ui_blip.wav"
+            "tick": "19_ui_blip.mp3"
         }
 
         for key, filename in sfx_files.items():
