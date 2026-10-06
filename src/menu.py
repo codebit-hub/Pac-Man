@@ -1,46 +1,68 @@
 import pygame
 import sys
 import os
+
 from renderer import Render
 from ui_config import UIConfig
 
+
 class Menu:
-    def __init__(self, screen: pygame.Surface, pacgums_power: int = 10, super_pacgums_power: int = 50, pacgums_nb: int = 4) -> None:
+    def __init__(self, screen: pygame.Surface,
+                 pacgums_power: int = 10,
+                 super_pacgums_power: int = 50,
+                 pacgums_nb: int = 4) -> None:
+
+        # 1. Basic variables and configuration
         self.screen = screen
         self.state = "main"
+        self.selected_item = 0
+        self.anime_x = 1000
+
         self.pacgums_power = pacgums_power
         self.super_pacgums_power = super_pacgums_power
         self.pacgums_nb = pacgums_nb
-        self.selected_item = 0
-        self._menu_rects: list[pygame.Rect] = []
-        self.anime_x: int = 1000
+
+        # 2. UI and drawing
         self.ui = UIConfig()
-
         self.renderer = Render()
-        main_spritesheet = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "assets", "spritesheets", "main-spritesheet.png"))
-        self.renderer.load_spritesheet(main_spritesheet)
+        self._menu_rects: list[pygame.Rect] = []
 
+        # 3. Varibles for animation and graphics
         self.last_anim_time = pygame.time.get_ticks()
         self.anim_frame = 0
+        self.pacman_frames: list[pygame.Surface] = []
+        self._mute_icon: pygame.Surface | None = None
+        self._mute_rect: pygame.Rect | None = None
 
-        self.pacman_frames = []
-        pacman_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "assets", "pacman", "pacman-left"))
+        # 4. Base dir for assets
+        base_dir = os.path.dirname(__file__)
+        assets = os.path.normpath(os.path.join(base_dir, "..", "assets"))
+
+        # -- Loading of files --
+
+        # Spritesheet
+        sheet_path = os.path.join(
+            assets, "spritesheets", "main-spritesheet.png"
+        )
+        self.renderer.load_spritesheet(sheet_path)
+
+        # Pac-Man animation
+        pacman_dir = os.path.join(assets, "pacman", "pacman-left")
         for i in range(1, 4):
             path = os.path.join(pacman_dir, f"{i}.png")
             try:
                 img = pygame.image.load(path).convert_alpha()
                 self.pacman_frames.append(pygame.transform.scale(img, (28, 28)))
-            except Exception:
+            except pygame.error:
                 pass
 
-        # Load volume-mute icon
-        mute_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "assets", "others", "volume-mute.png"))
+        # Icon for mute sounds
+        mute_path = os.path.join(assets, "others", "volume-mute.png")
         try:
-            mute_img = pygame.image.load(mute_path).convert_alpha()
-            self._mute_icon = pygame.transform.scale(mute_img, (32, 32))
-        except Exception:
-            self._mute_icon = None
-        self._mute_rect: pygame.Rect | None = None
+            img = pygame.image.load(mute_path).convert_alpha()
+            self._mute_icon = pygame.transform.scale(img, (32, 32))
+        except pygame.error:
+            pass
 
     def draw_main_menu(self, top_scores: list = None, audio=None) -> None:
         self.screen.fill((0, 0, 0))
