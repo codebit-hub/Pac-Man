@@ -54,7 +54,7 @@ class Highscorescreen:
             self.screen.blit(score_txt, score_rect)
 
         # Pulsing text
-        self.ui.draw_pulsing_nav(self.screen, "PRESS [ESC] TO RETURN OR CLICK", cx, bg_rect.bottom + 20)
+        self.ui.draw_pulsing_nav(self.screen, "PRESS [ENTER] TO RETURN", cx, bg_rect.bottom + 20)
 
         pygame.display.flip()
 

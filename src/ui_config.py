@@ -9,20 +9,19 @@ class UIConfig:
     def __init__(self) -> None:
         # Colors
         self.C_BG = (0, 0, 0)
-        self.C_BOX_BG = (70, 191, 238)
+        self.C_BOX_BG = (210,117,206)
         self.C_TEXT_WHITE = (255, 255, 255)
         self.C_TEXT_YELLOW = (255, 255, 0)
-        self.C_TEXT_CYAN = (70, 191, 238)
+        self.C_TEXT_PURPLE = (210, 117, 206)
 
         self.C_CLOSE_NORMAL = (255, 255, 255)
         self.C_CLOSE_HOVER = (255, 80, 80)
 
         self.C_GOLD = (255, 215, 0)
         self.C_SILVER = (192, 192, 192)
-        self.C_BRONZE = (205, 127, 50)
+        self.C_BRONZE = (164,101,40)
 
-        self.GAME_CYAN = (70, 191, 238)
-        self.GAME_RBLUE = (50, 100, 255)
+        self.GAME_PURPLE = (210, 117, 206)
         self.GAME_PATH = (20, 20, 40)
 
         # Fonts
