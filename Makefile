@@ -5,7 +5,7 @@ VENV_STAMP := .install_stamp
 FLAKE8 := flake8
 MYPY := mypy
 
-.PHONY: all run debug clean lint lint-strict
+.PHONY: all run debug clean lint lint-strict build
 
 all: $(VENV_STAMP)
 
@@ -39,3 +39,19 @@ lint: $(VENV_STAMP)
 lint-strict: $(VENV_STAMP)
 	./$(VENV_DIR)/bin/$(FLAKE8) .
 	./$(VENV_DIR)/bin/$(MYPY) . --strict
+
+build: $(VENV_STAMP)
+	@echo "Installing PyInstaller..."
+	./$(VENV_DIR)/bin/$(PIP) install pyinstaller
+	@echo "Building the standalone executable..."
+	./$(VENV_DIR)/bin/pyinstaller \
+		--noconfirm \
+		--onedir \
+		--windowed \
+		--name "pac-man" \
+		--paths src \
+		--add-data "assets:assets" \
+		--add-data "config.json:." \
+		pac-man.py
+	@echo "Build complete! Zip 'dist/pac-man/' folder. "
+	@echo "Upload it to Itch.io."
