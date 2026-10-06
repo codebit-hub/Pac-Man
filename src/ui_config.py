@@ -42,6 +42,7 @@ class UIConfig:
             self.font_inst_regular = load_font(12)
             self.close_font = load_font(12)
             self.font_hud = load_font(8)
+            self.pause_regular = load_font(16)
 
         except (pygame.error, FileNotFoundError):
             print("Warning: Custom font missing. Using default.")
@@ -52,6 +53,7 @@ class UIConfig:
             self.font_inst_regular = pygame.font.SysFont(None, 18)
             self.close_font = pygame.font.SysFont(None, 12)
             self.font_hud = pygame.font.SysFont(None, 12)
+            self.pause_regular = pygame.font.SysFont(None, 16)
 
     def draw_panel_bg(self, screen: pygame.Surface,
                       cx: int, cy: int) -> pygame.Rect:

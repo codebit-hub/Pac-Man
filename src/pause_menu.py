@@ -76,7 +76,7 @@ class PauseMenu:
                     for i, rect in enumerate(self._menu_rects):
                         if rect.collidepoint(mouse_pos) and i != separator_idx:
                             self.selected_item = i
-                            if app.is_eval and 4 <= i <= 12:
+                            if (app.is_eval and 4 <= i <= 12) or i == 2:
                                 font = self.ui.font_regular
                                 prefix = labels[i].split("<", 1)[0]
 
@@ -159,10 +159,14 @@ class PauseMenu:
 
         self._menu_rects = []
         start_y = cy - 110
+        pause_text = self.ui.pause_regular
 
         for i, label in enumerate(labels):
             if i == separator_idx:
-                sep_surf = self.ui.font_inst_title.render(label, True, color)
+                if i == 3:
+                    sep_surf = pause_text.render(label, True, self.ui.C_TEXT_YELLOW)
+                else:
+                    sep_surf = pause_text.render(label, True, color)
                 y_pos = start_y + (i * 35)
                 rect = sep_surf.get_rect(center=(cx, y_pos))
                 self.screen.blit(sep_surf, rect)
@@ -171,8 +175,8 @@ class PauseMenu:
 
             is_mute_item = label.startswith("Mute Sound")
             is_muted_on = is_mute_item and "ON" in label
+            color_muted = self.ui.C_CLOSE_HOVER
             if i == self.selected_item:
-                color_muted = self.ui.C_CLOSE_HOVER
                 color = color_muted if is_muted_on else self.ui.C_TEXT_CYAN
             elif is_muted_on:
                 color = color_muted
@@ -207,10 +211,14 @@ class PauseMenu:
                 self._reset_cheats_to_defaults(app)
 
     def _adjust_cheat_value(self, app: "Application", key: int) -> None:
+        idx = self.selected_item
+        if idx == 2:
+            app.audio.toggle_mute()
+            return
+
         if not app.is_eval:
             return
         diff = -0.5 if key in (pygame.K_a, pygame.K_LEFT) else 0.5
-        idx = self.selected_item
         if idx == 4:
             lvl_diff = -1 if diff < 0 else 1
             max_lvl = app.config.get("levels")
