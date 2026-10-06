@@ -19,6 +19,8 @@ class Render:
         # 2. Sizes of window
         self.max_w = max_width
         self.max_h = max_heigth
+        self.default_max_w = max_width
+        self.default_max_h = max_heigth
 
         # 3. Grid
         self.tile_size: int = 16
@@ -69,8 +71,21 @@ class Render:
         win_w = ts * grid_w
         win_h = (ts * grid_h) + 50
 
+        os.environ['SDL_VIDEO_CENTERED'] = '1'
         self.resize(win_w, win_h)
         pygame.display.set_caption("Pac-Man")
+
+    def restore_window(self) -> None:
+        """Restore the window after fullscreen"""
+        if self.grid_w > 0 and self.grid_h > 0:
+            tile_w = self.default_max_w // self.grid_w
+            tile_h = (self.default_max_h - 50) // self.grid_h
+            ts = max(1, min(tile_w, tile_h))
+            win_w = ts * self.grid_w
+            win_h = (ts * self.grid_h) + 50
+            os.environ['SDL_VIDEO_CENTERED'] = '1'
+            self.screen = pygame.display.set_mode((win_w, win_h), pygame.RESIZABLE)
+            self.resize(win_w, win_h)
 
     def resize(self, window_w: int, window_h: int) -> None:
         """Recalculate tile size and center offsets upon resize."""
@@ -86,6 +101,24 @@ class Render:
             maze_h = self.tile_size * self.grid_h
             self.offset_x = (window_w - maze_w) // 2
             self.offset_y = (window_h - 50 - maze_h) // 2
+
+        self.reload_scales()
+
+    def reload_scales(self) -> None:
+        """Rescale all textures based on current tile_size."""
+        if hasattr(self, 'orig_dot_img') and self.orig_dot_img:
+            self.dot_img = pygame.transform.scale(self.orig_dot_img, (self.tile_size, self.tile_size))
+        
+        if hasattr(self, 'orig_player_frames') and self.orig_player_frames:
+            for dir_key, orig_frames in self.orig_player_frames.items():
+                self.player_frames[dir_key] = [
+                    pygame.transform.scale(f, (self.tile_size, self.tile_size))
+                    for f in orig_frames
+                ]
+                
+        if self.sheet:
+            self.load_ghost_assets()
+            self.load_pacman_death()
 
     def load_spritesheet(self, filepath: str) -> None:
         """Load the main spritesheet used for ghost/entity sprites."""
@@ -187,9 +220,9 @@ class Render:
     def load_dot(self, filepath: str) -> None:
         """Load the pacgum dot sprite"""
         try:
-            img = pygame.image.load(filepath).convert_alpha()
+            self.orig_dot_img = pygame.image.load(filepath).convert_alpha()
             self.dot_img = pygame.transform.scale(
-                img, (self.tile_size, self.tile_size))
+                self.orig_dot_img, (self.tile_size, self.tile_size))
         except (pygame.error, FileNotFoundError) as err:
             print(f"Warning: Could not load dot sprite '{filepath}': {err}")
             self.dot_img = None
@@ -202,19 +235,23 @@ class Render:
             Direction.UP: "pacman-up",
             Direction.DOWN: "pacman-down",
         }
+        if not hasattr(self, 'orig_player_frames'):
+            self.orig_player_frames = {}
         for direction, folder in dir_folders.items():
             frames = []
+            scaled_frames = []
             for i in range(1, 4):
                 path = os.path.normpath(
                     os.path.join(base_dir, folder, f"{i}.png"))
                 try:
                     img = pygame.image.load(path).convert_alpha()
-                    tile_size = self.tile_size
-                    img = pygame.transform.scale(img, (tile_size, tile_size))
                     frames.append(img)
+                    scaled = pygame.transform.scale(img, (self.tile_size, self.tile_size))
+                    scaled_frames.append(scaled)
                 except (pygame.error, FileNotFoundError) as err:
                     print(f"Warning: Could not load '{path}': {err}")
-            self.player_frames[direction] = frames
+            self.orig_player_frames[direction] = frames
+            self.player_frames[direction] = scaled_frames
 
     def draw_pacgum(self, x: int, y: int) -> None:
         """Draw a pacgum (small dot) at grid position."""
