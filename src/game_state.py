@@ -59,11 +59,11 @@ class GameState:
         self.frigthened_timer = 0.0
         self.state = State.PLAYING
 
-    def update(self, delta_time: float) -> None:
+    def update(self, delta_time: float) -> bool:
         """Updates timers and managees state transitions"""
 
         if self.state != State.PLAYING:
-            return
+            return False
 
         # Updates frightened timer
         if self.is_frightened:
@@ -75,7 +75,12 @@ class GameState:
         # Update level countdown timer
         self.time_remaining -= delta_time
         if self.time_remaining <= 0:
-            self.lose_life()
+            # self.lose_life()
+            # Reset time and alert orchestrator of the timeout
+            self.time_remaining = self.max_time
+            return True
+
+        return False
 
     def add_score(self, points: int) -> None:
         """Adds points to player's total score"""
@@ -119,6 +124,10 @@ class GameState:
             self.time_remaining = self.max_time
             # Main game loop catches this and reset entity positions
 
+            # Reset frightened state to prevent logic and audio bleed-over
+            self.is_frightened = False
+            self.frigthened_timer = 0.0
+            
     def _check_victory(self) -> None:
         """Manages level progression"""
 

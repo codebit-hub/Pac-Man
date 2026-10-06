@@ -320,10 +320,22 @@ class Application:
             if self.audio.current_bgm is not None:
                 self.audio.stop_bgm()
         else:
-            # 1. Update State
-            self.game_state.update(dt)
+            # Update State and Track Positions
+            time_up = self.game_state.update(dt)
             self._update_wave_timers(dt)
-    
+
+            # Process timeout death (respecting invincibility)
+            if time_up and not self.invincible:
+                self.game_state.lose_life()
+                if self.game_state.state != State.GAME_OVER:
+                    self._play_death_anim(
+                        self.player.grid_x, self.player.grid_y
+                    )
+                    self.player.respawn()
+                    self._init_ghosts()
+                    self.intro_timer = 2.0
+                return
+
             # Check for Level Transition or Death BEFORE moving entities
             if self.game_state.state == State.LEVEL_TRANSITION:
                 self._load_level()
@@ -332,7 +344,7 @@ class Application:
                 # Transition to name input
                 self.input_name = ""
                 self.app_state = "NAME_INPUT"
-    
+
                 # Victory/Game Over audio loops
                 if self.game_state.state == State.VICTORY:
                     self.audio.play_bgm("victory")
@@ -340,27 +352,32 @@ class Application:
                     self.audio.stop_bgm()
                     self.audio.play_sfx("game_over")
                 return
-    
+
+            # Store prev pos for cross-over detection
+            prev_px = self.player.grid_x
+            prev_py = self.player.grid_y
+            prev_g_pos = {g: (g.grid_x, g.grid_y) for g in self.ghosts}
+
             # If entity's speed is 0,
             # division time_per_tile = 1.0 / self.speed means
             # dividing by 0 which crashes the game. If 0,
             # we dont update the frame
             if self.player.speed > 0:
                 self.player.update(dt, self.grid)
-    
+
             for g in self.ghosts:
                 if g.speed > 0:
                     old_state = g.state
-    
+
                     g.update(
                         dt, self.grid, self.player.grid_x, self.player.grid_y,
                         self.player.current_dir, self.blinky.grid_x, self.blinky.grid_y
                     )
-    
+
                     # If the ghost was EATEN but is now active again, it just respawned
                     if old_state == GhostState.EATEN and g.state != GhostState.EATEN:
                         self.audio.play_sfx("respawn")
-    
+
             # 2. Consumption & Collisions
             px, py = self.player.grid_x, self.player.grid_y
             if self.grid[py][px] == 2:
@@ -371,19 +388,32 @@ class Application:
                 self.grid[py][px] = 1
                 self.game_state.collect_super_pacgum()
                 self.audio.play_sfx("power")
-    
+
             for g in self.ghosts:
-                if px == g.grid_x and py == g.grid_y:
+                gx, gy = g.grid_x, g.grid_y
+                pgx, pgy = prev_g_pos[g]
+
+                # Standard exact tile overlap OR phase-through cross-over
+                is_collision = (px == gx and py == gy) or (
+                    px == pgx and py == pgy and
+                    prev_px == gx and prev_py == gy
+                )
+
+                if is_collision:
                     if g.state == GhostState.FLEE:
                         g.die()
                         # Only play sounds if die() changed the state
                         if g.state != GhostState.FLEE:
                             self.game_state.eat_ghost()
                             self.audio.play_sfx("eat_ghost")
-                            pts_text = f"{self.config.get('points_per_ghost')}"
-                            pixel_x = self.render.offset_x + px * self.render.tile_size
-                            pixel_y = self.render.offset_y + py * self.render.tile_size
-                            self.floating_texts.append([pts_text, pixel_x, pixel_y, 0.8])
+                            pts = f"{self.config.get('points_per_ghost')}"
+                            pixel_x = (self.render.offset_x +
+                                       px * self.render.tile_size)
+                            pixel_y = (self.render.offset_y +
+                                       py * self.render.tile_size)
+                            self.floating_texts.append(
+                                [pts, pixel_x, pixel_y, 0.8]
+                            )
                     elif g.state in (GhostState.CHASE, GhostState.SCATTER):
                         if not self.invincible:
                             self.game_state.lose_life()
@@ -431,10 +461,10 @@ class Application:
         if self.is_eval:
             inv = "ON" if self.invincible else "OFF"
             cheat_str = (f"INV: {inv} | "
-                         f"SPEEDS: Pac-Man: {self.player.speed:.1f} | "
-                         f"Blinky: {self.blinky.speed:.1f} | "
-                         f"Pinky: {self.pinky.speed:.1f} | "
-                         f"Inky: {self.inky.speed:.1f} | "
+                         f"SPEEDS: Pac-Man: {self.player.speed:.1f} "
+                         f"Blinky: {self.blinky.speed:.1f} "
+                         f"Pinky: {self.pinky.speed:.1f} "
+                         f"Inky: {self.inky.speed:.1f} "
                          f"Clyde: {self.clyde.speed:.1f}")
 
         total_levels = self.config.get("levels")
