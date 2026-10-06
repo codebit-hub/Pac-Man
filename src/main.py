@@ -210,6 +210,8 @@ class Application:
                 if ev.type == pygame.QUIT:
                     pygame.quit()
                     import sys; sys.exit()
+                elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:
+                    self.render.restore_window()
             self.render.screen.fill((0, 0, 0))
             for gy, row in enumerate(self.grid):
                 for gx, cell in enumerate(row):
@@ -268,6 +270,8 @@ class Application:
                         sys.exit()
                     elif ev.type == pygame.VIDEORESIZE:
                         self.render.resize(ev.w, ev.h)
+                    elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:
+                        self.render.restore_window()
                     self.menu.handle_event(ev, self.audio)
                 # Pass top 4 scores to the menu
                 top_4 = self.highscores.scores[:4]
@@ -298,7 +302,9 @@ class Application:
             elif ev.type == pygame.VIDEORESIZE:
                 self.render.resize(ev.w, ev.h)
             elif ev.type == pygame.KEYDOWN:
-                if ev.key in (pygame.K_w, pygame.K_UP):
+                if ev.key == pygame.K_ESCAPE:
+                    self.render.restore_window()
+                elif ev.key in (pygame.K_w, pygame.K_UP):
                     self.player.set_direction(Direction.UP)
                 elif ev.key in (pygame.K_s, pygame.K_DOWN):
                     self.player.set_direction(Direction.DOWN)
@@ -480,7 +486,9 @@ class Application:
             elif ev.type == pygame.VIDEORESIZE:
                 self.render.resize(ev.w, ev.h)
             elif ev.type == pygame.KEYDOWN:
-                if ev.key == pygame.K_RETURN:
+                if ev.key == pygame.K_ESCAPE:
+                    self.render.restore_window()
+                elif ev.key == pygame.K_RETURN:
                     self.highscores.add_score(
                         self.input_name, self.game_state.score
                     )

@@ -47,7 +47,9 @@ class PauseMenu:
             elif ev.type == pygame.VIDEORESIZE:
                 app.render.resize(ev.w, ev.h)
             elif ev.type == pygame.KEYDOWN:
-                if ev.key in (pygame.K_w, pygame.K_UP):
+                if ev.key == pygame.K_ESCAPE:
+                    app.render.restore_window()
+                elif ev.key in (pygame.K_w, pygame.K_UP):
                     self.selected_item = (self.selected_item - 1) % len(labels)
                     if app.is_eval and self.selected_item == separator_idx:
                         self.selected_item = separator_idx - 1
