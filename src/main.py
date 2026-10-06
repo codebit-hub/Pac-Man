@@ -4,6 +4,7 @@ import os
 import sys
 import random
 import pygame
+import math
 
 from config import ConfigManager
 from game_state import GameState, State
@@ -56,6 +57,7 @@ class Application:
         self.is_eval = self.config.get("game_mode") == "evaluation"
         self.invincible = False
         self.intro_timer = 0.0
+        self.last_beep_sec = -1
 
         # Track manual speed changes to persist them across level/death reloads
         self.custom_player_speed = None
@@ -197,8 +199,9 @@ class Application:
     def _play_death_anim(self, grid_x: int, grid_y: int) -> None:
         """Play Pac-Man death animation before respawn."""
 
-        self.audio.stop_bgm()           # <-- CUT MUSIC
-        self.audio.play_sfx("death")    # <-- PLAY DEATH SFX
+        self.audio.stop_bgm()
+        self.audio.stop_sfx()
+        self.audio.play_sfx("death")
 
         frames = self.render.pacman_death.get("frames", [])
         if not frames:
@@ -323,6 +326,14 @@ class Application:
             # Update State and Track Positions
             time_up = self.game_state.update(dt)
             self._update_wave_timers(dt)
+
+            # Timer's Up Warning
+            sec_left = math.ceil(self.game_state.time_remaining)
+            if 0 < sec_left <= 3 and sec_left != self.last_beep_sec:
+                self.audio.play_sfx("tick")
+                self.last_beep_sec = sec_left
+            elif sec_left > 3:
+                self.last_beep_sec = -1
 
             # Process timeout death (respecting invincibility)
             if time_up and not self.invincible:
