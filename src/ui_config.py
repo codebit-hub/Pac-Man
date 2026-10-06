@@ -112,7 +112,7 @@ class UIConfig:
     def load_icon(self) -> None:
         try:
             pacman_icon = os.path.normpath(os.path.join(
-            os.path.dirname(__file__), "..", "Assets", "pacman", "pacman-right", "1.png"
+            os.path.dirname(__file__), "..", "assets", "pacman", "pacman-right", "1.png"
             ))
             loaded_img = pygame.image.load(pacman_icon)
             orig_w, orig_h = loaded_img.get_size()
