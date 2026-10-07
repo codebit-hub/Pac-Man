@@ -2,7 +2,7 @@ import pygame
 import sys
 import os
 
-from renderer import Render
+from renderer import Render, MLXUtils
 from ui_config import UIConfig
 
 
@@ -52,7 +52,7 @@ class Menu:
             path = os.path.join(pacman_dir, f"{i}.png")
             try:
                 img = pygame.image.load(path).convert_alpha()
-                self.pacman_frames.append(pygame.transform.scale(img, (28, 28)))
+                self.pacman_frames.append(MLXUtils.scale_image(img, 28, 28))
             except pygame.error:
                 pass
 
@@ -60,7 +60,7 @@ class Menu:
         mute_path = os.path.join(assets, "others", "volume-mute.png")
         try:
             img = pygame.image.load(mute_path).convert_alpha()
-            self._mute_icon = pygame.transform.scale(img, (32, 32))
+            self._mute_icon = MLXUtils.scale_image(img, 32, 32)
         except pygame.error:
             pass
 
@@ -71,7 +71,7 @@ class Menu:
         def get_sp(x: int, y: int):
             surf = self.renderer.get_sprite(x, y)
             if surf:
-                scaled = pygame.transform.scale(surf, (28, 28))
+                scaled = MLXUtils.scale_image(surf, 28, 28)
                 scaled.set_colorkey((255, 0, 255))
                 return scaled
             return pygame.Surface((28, 28))
@@ -145,8 +145,8 @@ class Menu:
                 self.anime_x = start_x
 
             # Draw only once per frame at the current position
-            pygame.draw.circle(self.screen, (255,255,255), [self.anime_x, y_pos + 15], 5)
-            pygame.draw.circle(self.screen, (255,255,255), [self.anime_x + 38, y_pos + 15], 5)
+            MLXUtils.draw_circle(self.screen, (255,255,255), (int(self.anime_x), int(y_pos + 15)), 5)
+            MLXUtils.draw_circle(self.screen, (255,255,255), (int(self.anime_x + 38), int(y_pos + 15)), 5)
             self.screen.blit(pacman, (self.anime_x + 76, y_pos))
             self.screen.blit(clyde, (self.anime_x + 114, y_pos))
             self.screen.blit(blinky, (self.anime_x + 152, y_pos))
@@ -187,9 +187,9 @@ class Menu:
             y_pos = bg_rect.top + 120
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
             dots_txt = self.ui.font_inst_regular.render(f"PACGUMS SCORE {self.pacgums_power} POINTS", True, self.ui.C_TEXT_WHITE)
-            pygame.draw.circle(self.screen, self.ui.C_TEXT_WHITE, [bg_rect.left + 35, y_pos + 15], 5)
-            pygame.draw.circle(self.screen, self.ui.C_TEXT_WHITE, [bg_rect.left + 50, y_pos + 15], 5)
-            pygame.draw.circle(self.screen, self.ui.C_TEXT_WHITE, [bg_rect.left + 65, y_pos + 15], 5)
+            MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 35), int(y_pos + 15)), 5)
+            MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 50), int(y_pos + 15)), 5)
+            MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 65), int(y_pos + 15)), 5)
             self.screen.blit(dots_txt, dots_txt.get_rect(topleft=(bg_rect.left + 85, y_pos + 5)))
 
             y_pos = bg_rect.top + 170
@@ -197,7 +197,7 @@ class Menu:
             pacgums_nb_txt = self.ui.font_inst_regular.render(f"{self.pacgums_nb}", True, self.ui.C_TEXT_WHITE)
             pacgums_power_txt = self.ui.font_inst_regular.render(f"FLASHING SUPER PACGUMS SCORE {self.super_pacgums_power} POINTS", True, self.ui.C_TEXT_WHITE)
             self.screen.blit(pacgums_nb_txt, pacgums_nb_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 5)))
-            pygame.draw.circle(self.screen, self.ui.C_TEXT_WHITE, [bg_rect.left + 65, y_pos + 12], 10)
+            MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 65), int(y_pos + 12)), 10)
             self.screen.blit(pacgums_power_txt, pacgums_power_txt.get_rect(topleft=(bg_rect.left + 90, y_pos + 5)))
 
             y_pos = bg_rect.top + 220
@@ -237,16 +237,15 @@ class Menu:
 
         is_muted = audio.muted if audio else False
 
-        icon = self._mute_icon.copy()
         if is_muted:
-            # Apply red tint (adds red to black pixels)
-            icon.fill((220, 50, 50), special_flags=pygame.BLEND_RGB_ADD)
+            # Apply red tint manually
+            icon = MLXUtils.colorize_icon(self._mute_icon, 220, 50, 50)
             self.screen.blit(icon, (x, y))
             # Draw a diagonal strike-through line
-            pygame.draw.line(self.screen, (220, 50, 50), (x + 4, y + icon_size - 4), (x + icon_size - 4, y + 4), 3)
+            MLXUtils.draw_line(self.screen, (220, 50, 50), (x + 4, y + icon_size - 4), (x + icon_size - 4, y + 4), 3)
         else:
-            # Apply white tint (adds white to black pixels)
-            icon.fill((255, 255, 255), special_flags=pygame.BLEND_RGB_ADD)
+            # Apply white tint manually
+            icon = MLXUtils.colorize_icon(self._mute_icon, 255, 255, 255)
             self.screen.blit(icon, (x, y))
 
     def handle_event(self, event: pygame.event.Event, audio=None) -> None:
