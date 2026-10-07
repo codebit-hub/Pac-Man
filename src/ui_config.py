@@ -74,7 +74,7 @@ class UIConfig:
         c = color if color else self.C_TEXT_WHITE
         mid_y = y if is_centered else y + 15
         from renderer import MLXUtils
-        MLXUtils.draw_triangle(screen, c, 
+        MLXUtils.draw_triangle(screen, c,
             (x - 10, mid_y - 7),
             (x - 10, mid_y + 7),
             (x, mid_y)
@@ -92,8 +92,12 @@ class UIConfig:
 
     def load_icon(self) -> None:
         try:
+            import sys
+            base = getattr(
+                sys, '_MEIPASS', os.path.join(os.path.dirname(__file__), "..")
+                )
             pacman_icon = os.path.normpath(os.path.join(
-            os.path.dirname(__file__), "..", "assets", "pacman", "pacman-right", "1.png"
+                base, "assets", "pacman", "pacman-right", "1.png"
             ))
             loaded_img = pygame.image.load(pacman_icon)
             orig_w, orig_h = loaded_img.get_size()
