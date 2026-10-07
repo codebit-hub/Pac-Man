@@ -252,11 +252,13 @@ class Render:
         if hasattr(self, 'orig_player_frames') and self.orig_player_frames:
             p_size = max(1, int(self.tile_size * 0.8))
             for dir_key, orig_frames in self.orig_player_frames.items():
-                self.player_frames[dir_key] = [
-                    MLXUtils.scale_image(f, p_size, p_size)
-                    for f in orig_frames
-                ]
-                
+                rescaled = []
+                for f in orig_frames:
+                    s = MLXUtils.scale_image(f, p_size, p_size)
+                    s.set_colorkey((255, 0, 255))
+                    rescaled.append(s)
+                self.player_frames[dir_key] = rescaled
+
         if self.sheet:
             self.load_ghost_assets()
             self.load_pacman_death()
@@ -369,31 +371,76 @@ class Render:
             print(f"Warning: Could not load dot sprite '{filepath}': {err}")
             self.dot_img = None
 
-    def load_player_frames(self, base_dir: str) -> None:
-        """Load all directional animation frames for pacman."""
-        dir_folders = {
-            Direction.RIGHT: "pacman-right",
-            Direction.LEFT: "pacman-left",
-            Direction.UP: "pacman-up",
-            Direction.DOWN: "pacman-down",
-        }
+    def load_player_frames(self, base_dir: str = "") -> None:
+        """Load all directional Pac-Man animation frames from the spritesheet."""
         if not hasattr(self, 'orig_player_frames'):
             self.orig_player_frames = {}
-        for direction, folder in dir_folders.items():
-            frames = []
-            scaled_frames = []
-            for i in range(1, 4):
-                path = os.path.normpath(
-                    os.path.join(base_dir, folder, f"{i}.png"))
+
+        if self.sheet is None:
+            return
+            
+        base = 16
+        p_size = max(1, int(self.tile_size * 0.8))
+
+        dir_cols = {
+            Direction.RIGHT: 2,
+            Direction.LEFT:  0,
+            Direction.DOWN:  4,
+            Direction.UP:    6,
+        }
+
+        for direction, col in dir_cols.items():
+            orig_frames: list = []
+            scaled_frames: list = []
+            for anim_row in (0, 2):
+                x = col * base + 1
+                y = anim_row * base
+                rect = pygame.Rect(x, y, base * 2, base * 2)
+                
+                if x + rect.w <= self.sheet.get_width() and y + rect.h <= self.sheet.get_height():
+                    try:
+                        raw = self.sheet.subsurface(rect).copy()
+                        raw.set_colorkey((255, 0, 255))
+                        orig_frames.append(raw)
+                        
+                        scaled = MLXUtils.scale_image(raw, p_size, p_size)
+                        scaled.set_colorkey((255, 0, 255))
+                        scaled_frames.append(scaled)
+                    except ValueError:
+                        pass
+
+            # If no frames loaded, use a solid color fallback to avoid crashes
+            if not orig_frames:
+                surf = pygame.Surface((base * 2, base * 2))
+                surf.fill((255, 255, 0)) # Yellow square fallback
+                orig_frames.append(surf)
+                scaled_frames.append(MLXUtils.scale_image(surf, p_size, p_size))
+
+            # Attempt to load completely closed mouth (typically col 8, row 0)
+            closed_col = 8
+            closed_row = 0
+            cx = closed_col * base + 1
+            cy = closed_row * base
+            crect = pygame.Rect(cx, cy, base * 2, base * 2)
+            
+            if cx + crect.w <= self.sheet.get_width() and cy + crect.h <= self.sheet.get_height():
                 try:
-                    img = pygame.image.load(path).convert_alpha()
-                    frames.append(img)
-                    p_size = max(1, int(self.tile_size * 0.8))
-                    scaled = MLXUtils.scale_image(img, p_size, p_size)
-                    scaled_frames.append(scaled)
-                except (pygame.error, FileNotFoundError) as err:
-                    print(f"Warning: Could not load '{path}': {err}")
-            self.orig_player_frames[direction] = frames
+                    craw = self.sheet.subsurface(crect).copy()
+                    craw.set_colorkey((255, 0, 255))
+                    orig_frames.append(craw)
+                    
+                    cscaled = MLXUtils.scale_image(craw, p_size, p_size)
+                    cscaled.set_colorkey((255, 0, 255))
+                    scaled_frames.append(cscaled)
+                except ValueError:
+                    pass
+
+            # Fallback for the 3rd frame if loading the closed mouth failed
+            while len(orig_frames) < 3:
+                orig_frames.append(orig_frames[1] if len(orig_frames) > 1 else orig_frames[0])
+                scaled_frames.append(scaled_frames[1] if len(scaled_frames) > 1 else scaled_frames[0])
+
+            self.orig_player_frames[direction] = orig_frames
             self.player_frames[direction] = scaled_frames
 
     def draw_pacgum(self, x: int, y: int) -> None:
@@ -420,8 +467,8 @@ class Render:
     def draw_player(self, grid_x: int, grid_y: int,
                     direction: Direction, delta_time: float) -> None:
         """Draw pacman at grid position with directional animation."""
-        px = grid_x * self.tile_size + self.offset_x
-        py = grid_y * self.tile_size + self.offset_y
+        px = grid_x * self.tile_size + self.offset_x + 2.5
+        py = grid_y * self.tile_size + self.offset_y + 2.5
 
         self.anim_timer += delta_time
         if self.anim_timer >= self.ANIM_SPEED:
@@ -548,13 +595,14 @@ if __name__ == "__main__":
     # Load dot sprite (pacgum)
     _dot_path = os.path.join(
         os.path.dirname(__file__),
-        "..", "Assets", "pacman", "other", "dot.png"
+        "..", "assets", "pacman", "other", "dot.png"
     )
     render.load_dot(os.path.normpath(_dot_path))
-    _player_base = os.path.normpath(os.path.join(
-        os.path.dirname(__file__), "..", "Assets", "pacman"
+    _sheet_path = os.path.normpath(os.path.join(
+        os.path.dirname(__file__), "..", "assets", "spritesheets", "main-spritesheet.png"
     ))
-    render.load_player_frames(_player_base)
+    render.load_spritesheet(_sheet_path)
+    render.load_player_frames()
     clock = pygame.time.Clock()
     run = True
     while run:

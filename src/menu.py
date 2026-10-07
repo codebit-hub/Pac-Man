@@ -48,16 +48,6 @@ class Menu:
         )
         self.renderer.load_spritesheet(sheet_path)
 
-        # Pac-Man animation
-        pacman_dir = os.path.join(assets, "pacman", "pacman-left")
-        for i in range(1, 4):
-            path = os.path.join(pacman_dir, f"{i}.png")
-            try:
-                img = pygame.image.load(path).convert_alpha()
-                self.pacman_frames.append(MLXUtils.scale_image(img, 28, 28))
-            except pygame.error:
-                pass
-
         # Icon for mute sounds
         mute_path = os.path.join(assets, "others", "volume-mute.png")
         try:
@@ -78,16 +68,21 @@ class Menu:
                 return scaled
             return pygame.Surface((28, 28))
 
+        # Populate animation frames if empty (using spritesheet)
+        if not self.pacman_frames:
+            self.pacman_frames = [
+                get_sp(0, 0),  # open mouth left
+                get_sp(0, 2),  # half-open mouth left
+                get_sp(8, 0)   # closed mouth
+            ]
+
         # Animation logic (used by main state)
         current_time = pygame.time.get_ticks()
         if current_time - self.last_anim_time >= 100:
             self.last_anim_time = current_time
-            self.anim_frame = (self.anim_frame + 1) % 3
+            self.anim_frame = (self.anim_frame + 1) % len(self.pacman_frames)
 
-        if self.pacman_frames:
-            pacman = self.pacman_frames[self.anim_frame % len(self.pacman_frames)]
-        else:
-            pacman = get_sp(1, 0)
+        pacman = self.pacman_frames[self.anim_frame]
 
         blinky = get_sp(0, 8)
         pinky = get_sp(2, 8)
@@ -147,7 +142,6 @@ class Menu:
                 self.anime_x = start_x
 
             # Draw only once per frame at the current position
-            MLXUtils.draw_circle(self.screen, (255,255,255), (int(self.anime_x), int(y_pos + 15)), 5)
             MLXUtils.draw_circle(self.screen, (255,255,255), (int(self.anime_x + 38), int(y_pos + 15)), 5)
             self.screen.blit(pacman, (self.anime_x + 76, y_pos))
             self.screen.blit(clyde, (self.anime_x + 114, y_pos))
@@ -167,24 +161,30 @@ class Menu:
             # --- Panel ---
             bg_rect = self.ui.draw_panel_bg(self.screen, cx, cy)
 
-            ins_title = self.ui.font_inst_title.render("Instructions", True, self.ui.C_TEXT_WHITE)
+            ins_title = self.ui.font_inst_title.render("INTRUCTIONS", True, self.ui.C_TEXT_WHITE)
             blink_ghost_white = get_sp(10, 4)
-            pacman_txt = self.ui.font_inst_regular.render("avoids", True, self.ui.C_TEXT_WHITE)
-            self.screen.blit(ins_title, ins_title.get_rect(center=(cx, bg_rect.top + 30)))
+            pacman_txt = self.ui.font_inst_regular.render("AVOIDS", True, self.ui.C_TEXT_WHITE)
+            self.screen.blit(ins_title, ins_title.get_rect(center=(cx, bg_rect.top + 40)))
 
             self._close_rect = self.ui.draw_close_button(self.screen, bg_rect)
 
 
             y_pos = bg_rect.top + 70
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            self.screen.blit(pacman, pacman.get_rect(topleft=(bg_rect.left + 30, y_pos)))
-            txt_rect = pacman_txt.get_rect(topleft=(bg_rect.left + 70, y_pos + 5))
+            
+            pacman_rect = pacman.get_rect(topleft=(bg_rect.left + 30, y_pos))
+            self.screen.blit(pacman, pacman_rect)
+            
+            # Vertically center the AVOIDS text to pacman
+            txt_rect = pacman_txt.get_rect(left=bg_rect.left + 70, centery=pacman_rect.centery)
             self.screen.blit(pacman_txt, txt_rect)
+            
             ghost_x = txt_rect.right + 10
-            self.screen.blit(blinky, blinky.get_rect(topleft=(ghost_x, y_pos)))
-            self.screen.blit(pinky, pinky.get_rect(topleft=(ghost_x + 30, y_pos)))
-            self.screen.blit(inky, inky.get_rect(topleft=(ghost_x + 60, y_pos)))
-            self.screen.blit(clyde, clyde.get_rect(topleft=(ghost_x + 90, y_pos)))
+            # Also vertically center the ghosts to pacman
+            self.screen.blit(blinky, blinky.get_rect(left=ghost_x, centery=pacman_rect.centery))
+            self.screen.blit(pinky, pinky.get_rect(left=ghost_x + 30, centery=pacman_rect.centery))
+            self.screen.blit(inky, inky.get_rect(left=ghost_x + 60, centery=pacman_rect.centery))
+            self.screen.blit(clyde, clyde.get_rect(left=ghost_x + 90, centery=pacman_rect.centery))
 
             y_pos = bg_rect.top + 120
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
@@ -198,29 +198,37 @@ class Menu:
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
             pacgums_nb_txt = self.ui.font_inst_regular.render(f"{self.pacgums_nb}", True, self.ui.C_TEXT_WHITE)
             pacgums_power_txt = self.ui.font_inst_regular.render(f"FLASHING SUPER PACGUMS SCORE {self.super_pacgums_power} POINTS", True, self.ui.C_TEXT_WHITE)
-            self.screen.blit(pacgums_nb_txt, pacgums_nb_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 5)))
+            self.screen.blit(pacgums_nb_txt, pacgums_nb_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10)))
             MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 65), int(y_pos + 12)), 10)
-            self.screen.blit(pacgums_power_txt, pacgums_power_txt.get_rect(topleft=(bg_rect.left + 90, y_pos + 5)))
+            self.screen.blit(pacgums_power_txt, pacgums_power_txt.get_rect(topleft=(bg_rect.left + 90, y_pos + 10)))
 
             y_pos = bg_rect.top + 220
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
+            
             energezing_pc_txt = self.ui.font_inst_regular.render("AFTER POWER UP", True, self.ui.C_TEXT_WHITE)
+            pc_rect = energezing_pc_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10))
+            self.screen.blit(energezing_pc_txt, pc_rect)
+            
+            pacman_rect = pacman.get_rect(left=pc_rect.right + 10, centery=pc_rect.centery)
+            self.screen.blit(pacman, pacman_rect)
+            
             energezing_ghost_txt = self.ui.font_inst_regular.render("CAN EAT", True, self.ui.C_TEXT_WHITE)
-            self.screen.blit(energezing_pc_txt, energezing_pc_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 5)))
-            self.screen.blit(pacman, pacman.get_rect(topleft=(bg_rect.left + 220, y_pos)))
-            self.screen.blit(energezing_ghost_txt, energezing_ghost_txt.get_rect(topleft=(bg_rect.left + 260, y_pos + 5)))
-            self.screen.blit(blink_ghost_white, blink_ghost_white.get_rect(topleft=(bg_rect.left + 360, y_pos)))
+            ghost_txt_rect = energezing_ghost_txt.get_rect(left=pacman_rect.right + 10, centery=pc_rect.centery)
+            self.screen.blit(energezing_ghost_txt, ghost_txt_rect)
+            
+            blink_rect = blink_ghost_white.get_rect(left=ghost_txt_rect.right + 10, centery=pc_rect.centery)
+            self.screen.blit(blink_ghost_white, blink_rect)
 
             y_pos = bg_rect.top + 270
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
             controls_txt = self.ui.font_inst_regular.render("CONTROLS: [W][A][S][D] OR ARROWS TO MOVE", True, self.ui.C_TEXT_WHITE)
-            self.screen.blit(controls_txt, controls_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 5)))
+            self.screen.blit(controls_txt, controls_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10)))
 
             # Added Pause Instructions
             y_pos = bg_rect.top + 310
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
             pause_txt = self.ui.font_inst_regular.render("PAUSE: PRESS [P] OR [SPACE]", True, self.ui.C_TEXT_WHITE)
-            self.screen.blit(pause_txt, pause_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 5)))
+            self.screen.blit(pause_txt, pause_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10)))
 
             # Pulsing ESC hint
             self.ui.draw_pulsing_nav(self.screen, "PRESS [ENTER] TO RETURN", cx, bg_rect.bottom + 20)

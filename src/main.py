@@ -139,10 +139,9 @@ class Application:
         base = getattr(sys, '_MEIPASS', os.path.join(os.path.dirname(__file__), ".."))
         self.render.load_dot(os.path.normpath(
             os.path.join(base, "assets", "others", "dot.png")))
-        self.render.load_player_frames(os.path.normpath(
-            os.path.join(base, "assets", "pacman")))
         self.render.load_spritesheet(os.path.normpath(
             os.path.join(base, "assets", "spritesheets", "main-spritesheet.png")))
+        self.render.load_player_frames()
 
         self.render.load_ghost_assets()
         self.render.load_pacman_death()

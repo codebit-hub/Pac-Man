@@ -30,9 +30,9 @@ class UIConfig:
         self.font_title_small = pygame.font.SysFont(None, 24)
         self.font_inst_title = pygame.font.SysFont(None, 24)
         self.font_inst_regular = pygame.font.SysFont(None, 18)
-        self.close_font = pygame.font.SysFont(None, 12)
+        self.close_font = pygame.font.SysFont(None, 26)
         self.font_hud = pygame.font.SysFont(None, 20)
-        self.pause_regular = pygame.font.SysFont(None, 16)
+        self.pause_regular = pygame.font.SysFont(None, 26)
 
     def draw_panel_bg(self, screen: pygame.Surface,
                       cx: int, cy: int) -> pygame.Rect:
