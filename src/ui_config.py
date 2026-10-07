@@ -25,9 +25,9 @@ class UIConfig:
         self.GAME_PATH = (20, 20, 40)
 
         # Fonts
-        self.font_regular = pygame.font.SysFont(None, 24)
-        self.font_title = pygame.font.SysFont(None, 64)
-        self.font_title_small = pygame.font.SysFont(None, 36)
+        self.font_regular = pygame.font.SysFont(None, 36)
+        self.font_title = pygame.font.SysFont(None, 86)
+        self.font_title_small = pygame.font.SysFont(None, 24)
         self.font_inst_title = pygame.font.SysFont(None, 24)
         self.font_inst_regular = pygame.font.SysFont(None, 18)
         self.close_font = pygame.font.SysFont(None, 12)
