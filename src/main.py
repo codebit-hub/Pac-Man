@@ -264,7 +264,7 @@ class Application:
     def run(self) -> None:
         clock = pygame.time.Clock()
         while True:
-            dt = clock.tick(60) / 1000.0
+            dt = min(clock.tick(60) / 1000.0, 0.2)
 
             if self.app_state == "MENU":
                 self.audio.play_bgm("menu")
