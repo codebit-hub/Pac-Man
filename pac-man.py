@@ -13,15 +13,30 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 from src.main import Application
 
 
+def get_resource_path(relative_path: str) -> str:
+	"""Provides absolute resource path for PyInstaller."""
+
+	try:
+		# PyInstaller creates a temp folder and stores path in _MEIPASS
+		base_path = sys._MEIPASS
+
+	except AttributeError:
+		# If not running as a compiled exe, use normal path
+		base_path = os.path.abspath(".")
+
+	return os.path.join(base_path, relative_path)
+
+
 def main() -> None:
 	"""Validates argv and launches the game"""
 
-	if len(sys.argv) != 2:
-		print("Error: Exactly one argument is required.\n"
-		      "Usage: python3 pac-man.py config.json")
+	if len(sys.argv) > 2:
+		print("Error: Maximum one argument is allowed.\n"
+		      "Usage: 'python3 pac-man.py config.json'")
 		sys.exit(1)
 
-	config_file = sys.argv[1]
+	config_arg = sys.argv[1] if len(sys.argv) == 2 else "config.json"
+	config_file = get_resource_path(config_arg)
 
 	if not os.path.isfile(config_file):
 		print(f"Error: Configuration file '{config_file}' not found.")

@@ -34,9 +34,11 @@ class Menu:
         self._mute_icon: pygame.Surface | None = None
         self._mute_rect: pygame.Rect | None = None
 
-        # 4. Base dir for assets
-        base_dir = os.path.dirname(__file__)
-        assets = os.path.normpath(os.path.join(base_dir, "..", "assets"))
+        # Base dir for assets
+        base_dir = getattr(
+            sys, '_MEIPASS', os.path.join(os.path.dirname(__file__), "..")
+            )
+        assets = os.path.normpath(os.path.join(base_dir, "assets"))
 
         # -- Loading of files --
 

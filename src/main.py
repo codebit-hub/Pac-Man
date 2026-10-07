@@ -38,8 +38,8 @@ class Application:
         self.screen = self.render.screen
 
         # Configurations & Highscores
-        cfg_path = os.path.join(os.path.dirname(__file__), "..", "config.json")
-        self.config.load(cfg_path)
+        # cfg_path = os.path.join(os.path.dirname(__file__), "..", "config.json")
+        # self.config.load(cfg_path)
 
         self.game_state = GameState(self.config)
         self.highscores = HighScoreManager(self.config.get("highscore_filename"))
@@ -135,13 +135,15 @@ class Application:
         self.render.setup_display(grid_w, grid_h)
 
 
-        base = os.path.dirname(__file__)
+        # Use sys._MEIPASS if compiled, otherwise use standard relative path
+        base = getattr(sys, '_MEIPASS', os.path.join(os.path.dirname(__file__), ".."))
         self.render.load_dot(os.path.normpath(
-            os.path.join(base, "..", "assets", "others", "dot.png")))
+            os.path.join(base, "assets", "others", "dot.png")))
         self.render.load_player_frames(os.path.normpath(
-            os.path.join(base, "..", "assets", "pacman")))
+            os.path.join(base, "assets", "pacman")))
         self.render.load_spritesheet(os.path.normpath(
-            os.path.join(base, "..", "assets", "spritesheets", "main-spritesheet.png")))
+            os.path.join(base, "assets", "spritesheets", "main-spritesheet.png")))
+
         self.render.load_ghost_assets()
         self.render.load_pacman_death()
 

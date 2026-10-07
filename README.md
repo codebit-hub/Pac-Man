@@ -36,7 +36,48 @@ python3 pac-man.py config.json
 * **Game Screen:** A dynamic Pygame window will launch, sizing itself based on the level dimensions specified in the config.
 * *[Front-end] The game boots into a retro-styled Main Menu featuring animated sprites. During gameplay, you will see the dynamically generated maze, animated entities, and a bottom HUD tracking score, lives, wave modes, and active cheats.*
 
+---
 
+## Packaging & Deployment
+
+This project includes an automated build pipeline via `PyInstaller` to generate a standalone Linux executable. This executable bundles the Python interpreter, all dependencies, and all required static assets (audio, fonts, images) into a single directory, meaning the game can be played on compatible Linux machines without installing Python or cloning this repository.
+
+### How to Build the Package Natively
+
+If you wish to compile the standalone package yourself from the source code:
+
+1. Ensure your virtual environment is active.
+2. Run the build command from the root of the repository:
+```bash
+make build
+
+```
+
+
+3. The resulting standalone game directory will be placed in `dist/pac-man/`. You can zip this folder to distribute it.
+
+### How to Download and Play the Pre-Compiled Build (Evaluators)
+
+A pre-compiled Linux build has been uploaded as an unlisted, restricted project on Itch.io.
+
+1. **Access the Build:** Navigate to the secret URL provided for the evaluation: `https://codebit.itch.io/pac-man?secret=sOjS0gzLesg7acxiciNWgciemk`
+2. **Download:** Click the "Download" button to save the `pac-man-linux.zip` file to your computer.
+3. **Extract:** Unzip the downloaded file:
+```bash
+unzip pac-man-linux.zip -d pac-man-game
+
+```
+
+
+4. **Launch:** Navigate into the extracted directory and run the standalone executable:
+```bash
+cd pac-man-game
+./pac-man
+
+```
+
+
+*(Note: The executable automatically discovers the bundled `config.json` and assets; no command-line arguments are required).*
 
 ---
 
