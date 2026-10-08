@@ -337,117 +337,116 @@ class Application:
             if self.audio.current_bgm is not None:
                 self.audio.stop_bgm()
         else:
-            # Update State and Track Positions
-            time_up = self.game_state.update(dt)
-            self._update_wave_timers(dt)
+            # Add the real elapsed time to the accumulator
+            self.accumulator += dt
 
-            # Timer's Up Warning
-            sec_left = math.ceil(self.game_state.time_remaining)
-            if 0 < sec_left <= 3 and sec_left != self.last_beep_sec:
-                self.audio.play_sfx("tick")
-                self.last_beep_sec = sec_left
-            elif sec_left > 3:
-                self.last_beep_sec = -1
+            # Cap accumulator at 0.1s to prevent a "spiral of death" if the MLX loop heavily freezes
+            if self.accumulator > 0.1:
+                self.accumulator = 0.1
 
-            # Process timeout death (respecting invincibility)
-            if time_up and not self.invincible:
-                self.game_state.lose_life()
-                if self.game_state.state != State.GAME_OVER:
-                    self._play_death_anim(
-                        self.player.grid_x, self.player.grid_y
+            # Run the game logic in fixed, predictable micro-steps
+            while self.accumulator >= self.FIXED_DT:
+
+                # Update State and Track Positions (Use FIXED_DT, not dt)
+                time_up = self.game_state.update(self.FIXED_DT)
+                self._update_wave_timers(self.FIXED_DT)
+
+                # Timer's Up Warning
+                sec_left = math.ceil(self.game_state.time_remaining)
+                if 0 < sec_left <= 3 and sec_left != self.last_beep_sec:
+                    self.audio.play_sfx("tick")
+                    self.last_beep_sec = sec_left
+                elif sec_left > 3:
+                    self.last_beep_sec = -1
+
+                # Process timeout death (respecting invincibility)
+                if time_up and not self.invincible:
+                    self.game_state.lose_life()
+                    if self.game_state.state != State.GAME_OVER:
+                        self._play_death_anim(self.player.grid_x, self.player.grid_y)
+                        self.player.respawn()
+                        self._init_ghosts()
+                        self.intro_timer = 2.0
+                        self.accumulator = 0.0
+                    return
+
+                # Check for Level Transition or Death BEFORE moving entities
+                if self.game_state.state == State.LEVEL_TRANSITION:
+                    self._load_level()
+                    self.accumulator = 0.0
+                    return
+                elif self.game_state.state in (State.GAME_OVER, State.VICTORY):
+                    self.input_name = ""
+                    self.app_state = "NAME_INPUT"
+                    if self.game_state.state == State.VICTORY:
+                        self.audio.play_bgm("victory")
+                    else:
+                        self.audio.stop_bgm()
+                        self.audio.play_sfx("game_over")
+                    return
+
+                # Store prev pos for cross-over detection
+                prev_px = self.player.grid_x
+                prev_py = self.player.grid_y
+                prev_g_pos = {g: (g.grid_x, g.grid_y) for g in self.ghosts}
+
+                # Update entities using FIXED_DT
+                if self.player.speed > 0:
+                    self.player.update(self.FIXED_DT, self.grid)
+
+                for g in self.ghosts:
+                    if g.speed > 0:
+                        old_state = g.state
+                        g.update(
+                            self.FIXED_DT, self.grid, self.player.grid_x, self.player.grid_y,
+                            self.player.current_dir, self.blinky.grid_x, self.blinky.grid_y
+                        )
+                        if old_state == GhostState.EATEN and g.state != GhostState.EATEN:
+                            self.audio.play_sfx("respawn")
+
+                # 2. Consumption & Collisions (Now safely checks every micro-step)
+                px, py = self.player.grid_x, self.player.grid_y
+                if self.grid[py][px] == 2:
+                    self.grid[py][px] = 1
+                    self.game_state.collect_pacgums()
+                    self.audio.play_sfx("waka")
+                elif self.grid[py][px] == 3:
+                    self.grid[py][px] = 1
+                    self.game_state.collect_super_pacgum()
+                    self.audio.play_sfx("power")
+
+                for g in self.ghosts:
+                    gx, gy = g.grid_x, g.grid_y
+                    pgx, pgy = prev_g_pos[g]
+
+                    is_collision = (px == gx and py == gy) or (
+                        px == pgx and py == pgy and
+                        prev_px == gx and prev_py == gy
                     )
-                    self.player.respawn()
-                    self._init_ghosts()
-                    self.intro_timer = 2.0
-                return
 
-            # Check for Level Transition or Death BEFORE moving entities
-            if self.game_state.state == State.LEVEL_TRANSITION:
-                self._load_level()
-                return
-            elif self.game_state.state in (State.GAME_OVER, State.VICTORY):
-                # Transition to name input
-                self.input_name = ""
-                self.app_state = "NAME_INPUT"
+                    if is_collision:
+                        if g.state == GhostState.FLEE:
+                            g.die()
+                            if g.state != GhostState.FLEE:
+                                self.game_state.eat_ghost()
+                                self.audio.play_sfx("eat_ghost")
+                                pts = f"{self.config.get('points_per_ghost')}"
+                                pixel_x = (self.render.offset_x + px * self.render.tile_size)
+                                pixel_y = (self.render.offset_y + py * self.render.tile_size)
+                                self.floating_texts.append([pts, pixel_x, pixel_y, 0.8])
+                        elif g.state in (GhostState.CHASE, GhostState.SCATTER):
+                            if not self.invincible:
+                                self.game_state.lose_life()
+                                if self.game_state.state != State.GAME_OVER:
+                                    self._play_death_anim(px, py)
+                                    self.player.respawn()
+                                    self._init_ghosts()
+                                    self.intro_timer = 2.0
+                                    self.accumulator = 0.0
+                                return
 
-                # Victory/Game Over audio loops
-                if self.game_state.state == State.VICTORY:
-                    self.audio.play_bgm("victory")
-                else:
-                    self.audio.stop_bgm()
-                    self.audio.play_sfx("game_over")
-                return
-
-            # Store prev pos for cross-over detection
-            prev_px = self.player.grid_x
-            prev_py = self.player.grid_y
-            prev_g_pos = {g: (g.grid_x, g.grid_y) for g in self.ghosts}
-
-            # If entity's speed is 0,
-            # division time_per_tile = 1.0 / self.speed means
-            # dividing by 0 which crashes the game. If 0,
-            # we dont update the frame
-            if self.player.speed > 0:
-                self.player.update(dt, self.grid)
-
-            for g in self.ghosts:
-                if g.speed > 0:
-                    old_state = g.state
-
-                    g.update(
-                        dt, self.grid, self.player.grid_x, self.player.grid_y,
-                        self.player.current_dir, self.blinky.grid_x, self.blinky.grid_y
-                    )
-
-                    # If the ghost was EATEN but is now active again, it just respawned
-                    if old_state == GhostState.EATEN and g.state != GhostState.EATEN:
-                        self.audio.play_sfx("respawn")
-
-            # 2. Consumption & Collisions
-            px, py = self.player.grid_x, self.player.grid_y
-            if self.grid[py][px] == 2:
-                self.grid[py][px] = 1
-                self.game_state.collect_pacgums()
-                self.audio.play_sfx("waka")
-            elif self.grid[py][px] == 3:
-                self.grid[py][px] = 1
-                self.game_state.collect_super_pacgum()
-                self.audio.play_sfx("power")
-
-            for g in self.ghosts:
-                gx, gy = g.grid_x, g.grid_y
-                pgx, pgy = prev_g_pos[g]
-
-                # Standard exact tile overlap OR phase-through cross-over
-                is_collision = (px == gx and py == gy) or (
-                    px == pgx and py == pgy and
-                    prev_px == gx and prev_py == gy
-                )
-
-                if is_collision:
-                    if g.state == GhostState.FLEE:
-                        g.die()
-                        # Only play sounds if die() changed the state
-                        if g.state != GhostState.FLEE:
-                            self.game_state.eat_ghost()
-                            self.audio.play_sfx("eat_ghost")
-                            pts = f"{self.config.get('points_per_ghost')}"
-                            pixel_x = (self.render.offset_x +
-                                       px * self.render.tile_size)
-                            pixel_y = (self.render.offset_y +
-                                       py * self.render.tile_size)
-                            self.floating_texts.append(
-                                [pts, pixel_x, pixel_y, 0.8]
-                            )
-                    elif g.state in (GhostState.CHASE, GhostState.SCATTER):
-                        if not self.invincible:
-                            self.game_state.lose_life()
-                            if self.game_state.state != State.GAME_OVER:
-                                self._play_death_anim(px, py)
-                                self.player.respawn()
-                                self._init_ghosts()
-                                self.intro_timer = 2.0
-                            return
+                # Consume the fixed time chunk
+                self.accumulator -= self.FIXED_DT
 
         # 3. Draw Frame
         self.render.screen.fill((20, 20, 40))
