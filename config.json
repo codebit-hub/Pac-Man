@@ -18,7 +18,7 @@
 
     "game_mode": "evaluation",
     "highscore_filename": "highscore.json",
-    "levels": 3,
+    "levels": 1,
     "level": [
         {"width": 15, "height": 15},
         {"width": 16, "height": 16},

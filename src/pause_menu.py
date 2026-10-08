@@ -18,22 +18,22 @@ class PauseMenu:
 
     def run(self, app: "Application") -> None:
         """Draw and handle pause screen waiting for keypress."""
-        mute_label = f"Mute Sound: < {'ON' if app.audio.muted else 'OFF'} >"
+        mute_label = f"MUTE SOUND: < {'ON' if app.audio.muted else 'OFF'} >"
         if app.is_eval:
             labels = [
-                "Resume Game",
-                "Return to main menu",
+                "RESUME GAME",
+                "RETURN TO MAIN MENU",
                 mute_label,
                 "-- CHEATS --",
-                f"Level: < {app.game_state.current_level_idx + 1} >",
-                f"Invincibility: < {'ON' if app.invincible else 'OFF'} >",
-                f"Pac-Man Speed: < {app.player.speed:.1f} >",
-                f"Blinky Speed: < {app.blinky.speed:.1f} >",
-                f"Pinky Speed: < {app.pinky.speed:.1f} >",
-                f"Inky Speed: < {app.inky.speed:.1f} >",
-                f"Clyde Speed: < {app.clyde.speed:.1f} >",
-                f"Lives: < {app.game_state.lives} >",
-                "Reset to defaults",
+                f"LEVEL: < {app.game_state.current_level_idx + 1} >",
+                f"INVINCIBILITY: < {'ON' if app.invincible else 'OFF'} >",
+                f"PAC-MAN SPEED: < {app.player.speed:.1f} >",
+                f"BLINKY SPEED: < {app.blinky.speed:.1f} >",
+                f"PINKY SPEED: < {app.pinky.speed:.1f} >",
+                f"INKY SPEED: < {app.inky.speed:.1f} >",
+                f"CLYDE SPEED: < {app.clyde.speed:.1f} >",
+                f"LIVES: < {app.game_state.lives} >",
+                "RESET TO DEFAULTS",
             ]
             separator_idx = 3
         else:
@@ -150,8 +150,15 @@ class PauseMenu:
         cx = self.screen.get_width() // 2
         cy = self.screen.get_height() // 2
 
-        color = self.ui.C_TEXT_YELLOW
-        title = self.ui.font_title.render("PAUSED", True, color)
+        try:
+            surf = pygame.image.load("./assets/pause-icon.png")
+            # If the user wants scaling like in ready-photo, we can apply it here
+            from renderer import MLXUtils
+            title = MLXUtils.scale_image(surf, 200, 200)
+        except (FileNotFoundError, pygame.error, ImportError):
+            color = self.ui.C_TEXT_YELLOW
+            title = self.ui.font_title.render("PAUSED", True, color)
+
         self.screen.blit(title, title.get_rect(center=(cx, cy - 200)))
 
         self._menu_rects = []
@@ -165,7 +172,7 @@ class PauseMenu:
                 else:
                     sep_surf = pause_text.render(label, True, color)
                 y_pos = start_y + (i * 35)
-                rect = sep_surf.get_rect(center=(cx, y_pos))
+                rect = sep_surf.get_rect(center=(cx, y_pos - 10))
                 self.screen.blit(sep_surf, rect)
                 self._menu_rects.append(rect)
                 continue
@@ -180,7 +187,7 @@ class PauseMenu:
             else:
                 color = self.ui.C_TEXT_WHITE
             surf = self.ui.font_regular.render(label, True, color)
-            rect = surf.get_rect(center=(cx, start_y + (i * 35)))
+            rect = surf.get_rect(center=(cx, start_y + (i * 30)))
             self._menu_rects.append(rect)
             self.screen.blit(surf, rect)
 

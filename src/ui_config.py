@@ -30,7 +30,7 @@ class UIConfig:
 
         # Fonts
         self.font_regular = pygame.font.SysFont(None, 13)
-        self.font_title = pygame.font.SysFont(None, 13)
+        self.font_title = pygame.font.SysFont(None, 36)
         self.font_title_small = pygame.font.SysFont(None, 13)
         self.font_inst_title = pygame.font.SysFont(None, 13)
         self.font_inst_regular = pygame.font.SysFont(None, 13)
@@ -74,7 +74,7 @@ class UIConfig:
         """Draws the 'X' close button at the top-right"""
 
         mouse_pos = pygame.mouse.get_pos()
-        close_margin = 15
+        close_margin = 20
 
         width, height = self.close_font.size("X")
 

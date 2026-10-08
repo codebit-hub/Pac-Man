@@ -54,7 +54,11 @@ class Highscorescreen:
             self.screen.blit(score_txt, score_rect)
 
         # Pulsing text
-
+        try:
+            ret_img = pygame.image.load("./assets/return-instuctions.png")
+            self.screen.blit(ret_img, ret_img.get_rect(center=(cx, bg_rect.bottom + 50)))
+        except (FileNotFoundError, pygame.error):
+            pass
         pygame.display.flip()
 
 if __name__ == "__main__":

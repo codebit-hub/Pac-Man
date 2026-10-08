@@ -1,5 +1,6 @@
 """Master execution script integrating Menu, Game, and Highscores."""
 
+from renderer import MLXUtils
 import os
 import sys
 import random
@@ -520,7 +521,11 @@ class Application:
         self.floating_texts = still_alive
 
         if self.intro_timer > 0:
-            ready_surf = self.ui.font_title.render("READY!", True, self.ui.C_TEXT_YELLOW)
+            try:
+                surf = pygame.image.load("./assets/ready-photo.png")
+                ready_surf = MLXUtils.scale_image(surf, 200, 200)
+            except (FileNotFoundError, pygame.error):
+                ready_surf = self.ui.font_regular.render("READY!", True, self.ui.C_TEXT_YELLOW)
             cx = self.render.screen.get_width() // 2
             cy = self.render.screen.get_height() // 2 + 30
             self.render.screen.blit(ready_surf, ready_surf.get_rect(center=(cx, cy)))

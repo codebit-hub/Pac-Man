@@ -136,10 +136,10 @@ class Menu:
             if top_scores:
                 try:
                     top_scores_img = pygame.image.load("./assets/menu-nav/highscores.png")
-                    self.screen.blit(top_scores_img, top_scores_img.get_rect(center=(cx + 5, cy + 120)))
+                    self.screen.blit(top_scores_img, top_scores_img.get_rect(center=(cx, cy + 120)))
                 except (FileNotFoundError, pygame.error):
                     hs_title = self.ui.font_regular.render("TOP SCORES", True, (253, 255, 0))
-                    self.screen.blit(hs_title, hs_title.get_rect(center=(cx + 5, cy + 120)))
+                    self.screen.blit(hs_title, hs_title.get_rect(center=(cx, cy + 120)))
                 for idx, hs in enumerate(top_scores):
                     text = f"{idx + 1}. {hs['name']} - {hs['score']} pts"
                     surf = self.ui.font_regular.render(text, True, (255, 255, 255))
@@ -244,6 +244,11 @@ class Menu:
             self.screen.blit(pause_txt, pause_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10)))
 
             # Pulsing ESC hint
+            try:
+                ret_img = pygame.image.load("./assets/return-instuctions.png")
+                self.screen.blit(ret_img, ret_img.get_rect(center=(cx, bg_rect.bottom + 50)))
+            except (FileNotFoundError, pygame.error):
+                pass
 
 
 

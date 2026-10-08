@@ -523,14 +523,17 @@ class Render:
         cx = self.screen.get_width() // 2
         cy = self.screen.get_height() // 2
 
-        msg = "VICTORY!" if is_victory else "GAME OVER"
-        color = (0, 255, 0) if is_victory else (255, 0, 0)
-
-        title = self.ui.font_title.render(msg, True, color)
-        score_msg = f"Final Score: {score}"
+        try:
+            img_path = "./assets/victory-msg.png" if is_victory else "./assets/gameover-msg.png"
+            title = pygame.image.load(img_path)
+        except (FileNotFoundError, pygame.error):
+            msg = "VICTORY!" if is_victory else "GAME OVER"
+            color = (0, 255, 0) if is_victory else (255, 0, 0)
+            title = self.ui.font_title.render(msg, True, color)
+        score_msg = f"FINAL SCORE: {score}"
         color = self.ui.C_TEXT_WHITE
         score_txt = self.ui.font_regular.render(score_msg, True, color)
-        prompt_msg = "Enter Name (Max 10 chars):"
+        prompt_msg = "ENTER NAME (MAX 10 CHARS):"
         prompt = self.ui.font_regular.render(prompt_msg, True, color)
 
         # Name Input Box
