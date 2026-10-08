@@ -5,6 +5,7 @@ Sets RGB color and font constants.
 import pygame
 import os
 import math
+import time
 
 
 class UIConfig:
@@ -98,7 +99,7 @@ class UIConfig:
                          cx: int, cy: int) -> None:
 
         """Draws pulsing text at the given center coordinates."""
-        current_time = pygame.time.get_ticks()
+        current_time = int(time.perf_counter() * 1000)
         pulse = (math.sin(current_time * 0.005) + 1) / 2
         brightness = int(100 + 155 * pulse)
         color = (brightness, brightness, brightness)

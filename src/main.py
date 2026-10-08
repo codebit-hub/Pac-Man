@@ -5,6 +5,7 @@ import sys
 import random
 import pygame
 import math
+import time
 
 from config import ConfigManager
 from game_state import GameState, State
@@ -213,9 +214,9 @@ class Application:
 
         frames = self.render.pacman_death.get("frames", [])
         if not frames:
-            pygame.time.wait(600)
+            time.sleep(0.6)
             return
-        clock = pygame.time.Clock()
+
         for frame_idx in range(len(frames)):
             for ev in pygame.event.get():
                 if ev.type == pygame.QUIT:
@@ -235,8 +236,11 @@ class Application:
             self.render.draw_walls_grid(self.grid)
             self.render.draw_pacman_death(grid_x, grid_y, frame_idx)
             self.render.render_frame()
-            clock.tick(12)
-        pygame.time.wait(400)
+
+            # Simulate 12 FPS animatation
+            time.sleep(1.0 / 12.0)
+
+        time.sleep(0.4)
 
     def _update_wave_timers(self, delta_time: float) -> None:
         """Manage Scatter/Chase and Flee modes from GameState."""
@@ -269,9 +273,19 @@ class Application:
                     g.reverse_direction()
 
     def run(self) -> None:
-        clock = pygame.time.Clock()
+        last_time = time.perf_counter()
         while True:
-            dt = min(clock.tick(60) / 1000.0, 0.2)
+            current_time = time.perf_counter()
+            dt = current_time - last_time
+
+            # Manually cap framerate to about 60 FPS
+            # dt = min(clock.tick(60) / 1000.0, 0.2)
+            if dt < (1.0 / 60.0):
+                time.sleep((1.0 / 60.0) - dt)
+                current_time = time.perf_counter()
+                dt = current_time - last_time
+
+            last_time = current_time
 
             if self.app_state == "MENU":
                 self.audio.play_bgm("menu")

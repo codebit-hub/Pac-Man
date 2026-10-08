@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+import time
 
 from renderer import Render, MLXUtils
 from ui_config import UIConfig
@@ -28,7 +29,7 @@ class Menu:
         self._menu_rects: list[pygame.Rect] = []
 
         # 3. Varibles for animation and graphics
-        self.last_anim_time = pygame.time.get_ticks()
+        self.last_anim_time = int(time.perf_counter() * 1000)
         self.anim_frame = 0
         self.pacman_frames: list[pygame.Surface] = []
         self._mute_icon: pygame.Surface | None = None
@@ -77,7 +78,7 @@ class Menu:
             ]
 
         # Animation logic (used by main state)
-        current_time = pygame.time.get_ticks()
+        current_time = int(time.perf_counter() * 1000)
         if current_time - self.last_anim_time >= 100:
             self.last_anim_time = current_time
             self.anim_frame = (self.anim_frame + 1) % len(self.pacman_frames)
@@ -171,14 +172,14 @@ class Menu:
 
             y_pos = bg_rect.top + 70
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            
+
             pacman_rect = pacman.get_rect(topleft=(bg_rect.left + 30, y_pos))
             self.screen.blit(pacman, pacman_rect)
-            
+
             # Vertically center the AVOIDS text to pacman
             txt_rect = pacman_txt.get_rect(left=bg_rect.left + 70, centery=pacman_rect.centery)
             self.screen.blit(pacman_txt, txt_rect)
-            
+
             ghost_x = txt_rect.right + 10
             # Also vertically center the ghosts to pacman
             self.screen.blit(blinky, blinky.get_rect(left=ghost_x, centery=pacman_rect.centery))
@@ -204,18 +205,18 @@ class Menu:
 
             y_pos = bg_rect.top + 220
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            
+
             energezing_pc_txt = self.ui.font_inst_regular.render("AFTER POWER UP", True, self.ui.C_TEXT_WHITE)
             pc_rect = energezing_pc_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10))
             self.screen.blit(energezing_pc_txt, pc_rect)
-            
+
             pacman_rect = pacman.get_rect(left=pc_rect.right + 10, centery=pc_rect.centery)
             self.screen.blit(pacman, pacman_rect)
-            
+
             energezing_ghost_txt = self.ui.font_inst_regular.render("CAN EAT", True, self.ui.C_TEXT_WHITE)
             ghost_txt_rect = energezing_ghost_txt.get_rect(left=pacman_rect.right + 10, centery=pc_rect.centery)
             self.screen.blit(energezing_ghost_txt, ghost_txt_rect)
-            
+
             blink_rect = blink_ghost_white.get_rect(left=ghost_txt_rect.right + 10, centery=pc_rect.centery)
             self.screen.blit(blink_ghost_white, blink_rect)
 
@@ -322,8 +323,16 @@ if __name__ == "__main__":
     menu = Menu(screen)
     menu.state = "main"
 
-    clock = pygame.time.Clock()
+    last_time = time.perf_counter()
     while True:
+        current_time = time.perf_counter()
+        dt = current_time - last_time
+        if dt < (1.0 / 60.0):
+            time.sleep((1.0 / 60.0) - dt)
+            current_time = time.perf_counter()
+            dt = current_time - last_time
+        last_time = current_time
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -332,4 +341,3 @@ if __name__ == "__main__":
 
         menu.draw_main_menu()
         pygame.display.flip()
-        clock.tick(60)

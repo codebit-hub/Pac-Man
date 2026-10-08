@@ -1,6 +1,7 @@
 import pygame
 import os
 import math
+import time
 from typing import Optional, cast
 
 from maze_loader import MazeLoader
@@ -127,15 +128,15 @@ class MLXUtils:
         max_x = int(max(p1[0], p2[0], p3[0]))
         min_y = int(min(p1[1], p2[1], p3[1]))
         max_y = int(max(p1[1], p2[1], p3[1]))
-        
+
         min_x = max(0, min_x)
         min_y = max(0, min_y)
         max_x = min(surf.get_width() - 1, max_x)
         max_y = min(surf.get_height() - 1, max_y)
-        
+
         def sign(p1, p2, p3):
             return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
-            
+
         for y in range(min_y, max_y + 1):
             for x in range(min_x, max_x + 1):
                 d1 = sign((x, y), p1, p2)
@@ -248,7 +249,7 @@ class Render:
         """Rescale all textures based on current tile_size."""
         if hasattr(self, 'orig_dot_img') and self.orig_dot_img:
             self.dot_img = MLXUtils.scale_image(self.orig_dot_img, self.tile_size, self.tile_size)
-        
+
         if hasattr(self, 'orig_player_frames') and self.orig_player_frames:
             p_size = max(1, int(self.tile_size * 0.8))
             for dir_key, orig_frames in self.orig_player_frames.items():
@@ -378,7 +379,7 @@ class Render:
 
         if self.sheet is None:
             return
-            
+
         base = 16
         p_size = max(1, int(self.tile_size * 0.8))
 
@@ -396,13 +397,13 @@ class Render:
                 x = col * base + 1
                 y = anim_row * base
                 rect = pygame.Rect(x, y, base * 2, base * 2)
-                
+
                 if x + rect.w <= self.sheet.get_width() and y + rect.h <= self.sheet.get_height():
                     try:
                         raw = self.sheet.subsurface(rect).copy()
                         raw.set_colorkey((255, 0, 255))
                         orig_frames.append(raw)
-                        
+
                         scaled = MLXUtils.scale_image(raw, p_size, p_size)
                         scaled.set_colorkey((255, 0, 255))
                         scaled_frames.append(scaled)
@@ -422,13 +423,13 @@ class Render:
             cx = closed_col * base + 1
             cy = closed_row * base
             crect = pygame.Rect(cx, cy, base * 2, base * 2)
-            
+
             if cx + crect.w <= self.sheet.get_width() and cy + crect.h <= self.sheet.get_height():
                 try:
                     craw = self.sheet.subsurface(crect).copy()
                     craw.set_colorkey((255, 0, 255))
                     orig_frames.append(craw)
-                    
+
                     cscaled = MLXUtils.scale_image(craw, p_size, p_size)
                     cscaled.set_colorkey((255, 0, 255))
                     scaled_frames.append(cscaled)
@@ -494,7 +495,7 @@ class Render:
         frame_idx = max(0, min(frame_idx, len(frames) - 1))
         px = grid_x * self.tile_size + self.offset_x
         py = grid_y * self.tile_size + self.offset_y
-        
+
         img = frames[frame_idx]
         offset_center = (self.tile_size - img.get_width()) // 2
         self.screen.blit(img, (px + offset_center, py + offset_center))
@@ -603,9 +604,18 @@ if __name__ == "__main__":
     ))
     render.load_spritesheet(_sheet_path)
     render.load_player_frames()
-    clock = pygame.time.Clock()
+
+    last_time = time.perf_counter()
     run = True
     while run:
+        current_time = time.perf_counter()
+        delta_time = current_time - last_time
+        if delta_time < (1.0 / 60.0):
+            time.sleep((1.0 / 60.0) - delta_time)
+            current_time = time.perf_counter()
+            delta_time = current_time - last_time
+        last_time = current_time
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -619,7 +629,6 @@ if __name__ == "__main__":
                 elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
                     player.set_direction(Direction.RIGHT)
 
-        delta_time = clock.tick(60) / 1000
         player.update(delta_time, grid)
 
         render.screen.fill((20, 20, 40))
