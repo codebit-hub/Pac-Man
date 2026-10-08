@@ -59,6 +59,11 @@ class Application:
         self.intro_timer = 0.0
         self.last_beep_sec = -1
 
+        # Decoupling frame rendering from backend logic
+        # Locks game logic to 60 updates per second
+        self.accumulator = 0.0
+        self.FIXED_DT = 1.0 / 60.0
+
         # Track manual speed changes to persist them across level/death reloads
         self.custom_player_speed = None
         self.custom_ghost_speeds = {}
@@ -94,6 +99,8 @@ class Application:
 
     def _load_level(self) -> None:
         """Generate maze, spawn entities, and prepare renderer."""
+
+        self.accumulator = 0.0
         self.loader = MazeLoader()
 
         # Pull base dimensions, can increase difficulty by scaling size later

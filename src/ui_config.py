@@ -1,3 +1,7 @@
+"""
+Sets RGB color and font constants.
+
+"""
 import pygame
 import os
 import math
@@ -7,6 +11,8 @@ class UIConfig:
     """Centralized UI settings and common drawing routines."""
 
     def __init__(self) -> None:
+        """Sets up colors, fonts, """
+
         # Colors
         self.C_BG = (0, 0, 0)
         self.C_BOX_BG = (210,117,206)
@@ -34,9 +40,14 @@ class UIConfig:
         self.font_hud = pygame.font.SysFont(None, 20)
         self.pause_regular = pygame.font.SysFont(None, 26)
 
-    def draw_panel_bg(self, screen: pygame.Surface,
-                      cx: int, cy: int) -> pygame.Rect:
+    def draw_panel_bg(
+            self,
+            screen: pygame.Surface,
+            cx: int,
+            cy: int
+    ) -> pygame.Rect:
         """Draws the standard cyan UI panel and returns its Rect."""
+
         panel_w = min(int(screen.get_width() * 0.9), 600)
         panel_h = min(int(screen.get_height() * 0.95), 420)
         bg_rect = pygame.Rect(0, 0, panel_w, panel_h)
@@ -48,6 +59,7 @@ class UIConfig:
     def draw_close_button(self, screen: pygame.Surface,
                           bg_rect: pygame.Rect) -> pygame.Rect:
         """Draws the 'X' close button at the top-right"""
+
         mouse_pos = pygame.mouse.get_pos()
         close_margin = 15
 
@@ -71,6 +83,7 @@ class UIConfig:
                     color: tuple | None = None,
                     is_centered: bool = False) -> None:
         """Draws a standard triangle bullet point."""
+
         c = color if color else self.C_TEXT_WHITE
         mid_y = y if is_centered else y + 15
         from renderer import MLXUtils
@@ -82,6 +95,7 @@ class UIConfig:
 
     def draw_pulsing_nav(self, screen: pygame.Surface, text: str,
                          cx: int, cy: int) -> None:
+
         """Draws pulsing text at the given center coordinates."""
         current_time = pygame.time.get_ticks()
         pulse = (math.sin(current_time * 0.005) + 1) / 2
