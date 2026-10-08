@@ -90,38 +90,45 @@ class Menu:
         clyde = get_sp(6, 8)
 
         if self.state == "main":
-            labels = [
-                "View Highscores",
-                "Instructions",
-                "Exit"
-            ]
-
             cx = self.screen.get_width() // 2
             cy = self.screen.get_height() // 2
 
             # 1. Draw Title
-            title = self.ui.font_title.render("Pac-Man", True, (253, 255, 0))
-            self.screen.blit(title, title.get_rect(center=(cx - 5, cy - 200)))
-            self.ui.draw_pulsing_nav(self.screen, "Push SPACE for play", cx - 5, cy - 100)
+            try:
+                img = pygame.image.load("./assets/menu-nav/pac-man-logo.png")
+                self.screen.blit(img, img.get_rect(center=(cx, cy - 200)))
+            except (FileNotFoundError, pygame.error) as err:
+                print("Couldn't load PACMAN title in menu, loading default text..")
+                title = self.ui.font_title.render("Pac-Man", True, (253, 255, 0))
+                self.screen.blit(title, title.get_rect(center=(cx - 5, cy - 200)))
+
+            try:
+                push_img = pygame.image.load("./assets/menu-nav/push-space.png")
+                self.screen.blit(push_img, push_img.get_rect(center=(cx - 5, cy - 100)))
+            except (FileNotFoundError, pygame.error):
+                self.ui.draw_pulsing_nav(self.screen, "Push SPACE for play", cx - 5, cy + 200)
 
 
             # 2. Draw Menu Items & Pointer
             self._menu_rects = []
-            for i, label in enumerate(labels):
-                if i == 2 and i == self.selected_item:
-                    color = self.ui.C_CLOSE_HOVER
-                elif i == self.selected_item:
-                    color = self.ui.C_TEXT_PURPLE
-                else:
-                    color = self.ui.C_TEXT_WHITE
+            menu_items = [
+                ("view-highscore.png", "view-highscore-hover.png"),
+                ("instructions.png", "instructions-hover.png"),
+                ("exit.png", "exit-hover.png")
+            ]
 
-                surf = self.ui.font_regular.render(label, True, color)
-                rect = surf.get_rect(center=(cx, cy - 30 + (i * 45)))
+            for i, (normal_img, hover_img) in enumerate(menu_items):
+                img_name = hover_img if i == self.selected_item else normal_img
+                try:
+                    surf = pygame.image.load(f"./assets/menu-nav/{img_name}")
+                except (FileNotFoundError, pygame.error):
+                    labels = ["View Highscores", "Instructions", "Exit"]
+                    color = self.ui.C_TEXT_PURPLE if i == self.selected_item else self.ui.C_TEXT_WHITE
+                    surf = self.ui.font_regular.render(labels[i], True, color)
+
+                rect = surf.get_rect(center=(cx, cy - 35 + (i * 50)))
                 self._menu_rects.append(rect)
                 self.screen.blit(surf, rect)
-
-                if i == self.selected_item:
-                    self.ui.draw_bullet(self.screen, rect.left - 15, rect.centery, color=color, is_centered=True)
 
             # 3. Draw Top 4 Highscores
             if top_scores:
