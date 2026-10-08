@@ -121,22 +121,15 @@ The backend is built around a central `Application` orchestrator that acts as a 
 
 **Technical Trade-offs & Features:**
 
-* **Frame-Independent Movement:**
+* **MLX Compliance & Rendering:**
 
-Entities use a `delta_time` multiplier synced to the Pygame clock tick. This ensures that Pac-Man and the ghosts move at the exact same logical speed regardless of whether a machine runs at 30 FPS or 144 FPS.
+To adhere to the strict constraints of the 42 MLX graphics library, standard Pygame shape-drawing methods were entirely replaced with a custom `MLXUtils` wrapper. This module simulates `mlx_pixel_put` by executing pixel-by-pixel geometric math (e.g., Bresenham's algorithm) to render the game grid. Pygame's native text and surface blitting were retained strictly for UI legibility, representing a practical compromise between architectural compliance and runtime performance.
 
-* **Decoupled State:**
+* **Fixed Timestep & Collision Consistency:**
 
-The backend logic (`GameState`) handles all timers (e.g., Flee mode, Scatter/Chase wave switching) and score aggregation independently of the graphics.
-
-* **Safe Instantiation:**
-
-To prevent Pygame from suffering hardware-level crashes during level-reloads (due to ZeroDivisionErrors when evaluation speeds are set to 0.0), the engine calculates and overrides entity attributes securely *after* class initialization.
-
-* **Technical Trade-offs & MLX Compliance:**
-
-To strictly adhere to the MLX graphics library constraints, high-level Pygame drawing methods were entirely stripped out and replaced with a custom MLXUtils wrapper that simulates low-level mlx_pixel_put operations using pixel-by-pixel rendering algorithms like Bresenham's. While this successfully fulfilled the architectural requirement, running pure Python loops over thousands of pixels per frame introduced a severe CPU bottleneck that artificially inflated the frame time (delta_time). Because the engine relies on frame-independent movement logic, these massive rendering delays originally caused entities to "teleport" across multiple tiles in a single frame, resulting in Pac-Man phasing through pacgums without triggering consumption checks. Rather than over-engineering a complex ray-casting collision system to catch intermediate tile overlaps, we implemented an elegant mathematical compromise: capping the maximum delta_time sent to the engine at exactly 0.2 seconds. Since Pac-Man requires exactly 0.2 seconds to cross a single tile at his default speed, this cap mathematically restricts him to moving a maximum of one tile per frame. This trade-off flawlessly eliminates collision skipping and naturally syncs the backend game clock with the physical rendering lag, keeping the game perfectly playable despite the heavy pixel-drawing overhead.
-
+The CPU-heavy pixel-by-pixel rendering inherently introduces artificial frame lag. Using a standard frame-independent `delta_time` caused high-speed entities to teleport across multiple tiles in a single frame, phasing through pacgums and missing collisions. To guarantee exact logic execution at any dynamic speed (from 0 to 10 in evaluation mode), the engine implements a **Fixed Timestep with an Accumulator**. This architecture completely decouples the physical rendering loop from the backend physics loop. It accumulates real-world frame lag and processes the game logic in strict 0.016-second micro-steps before drawing to the screen. This ensures 100% collision accuracy and consistent rendering behavior, completely neutralizing the visual bottleneck.
+* **Decoupled State:** The backend logic (`GameState`) handles all timers (e.g., Flee mode, Scatter/Chase wave switching) and score aggregation completely independently of the front-end graphics.
+* **Safe Instantiation:** To prevent hardware-level crashes during level reloads (e.g., catching `ZeroDivisionError` when evaluation speeds are aggressively scaled to 0.0), the engine securely calculates and overrides entity attributes *after* class initialization.
 ---
 
 ## General Software Architecture
