@@ -532,8 +532,8 @@ class Render:
         cx = self.screen.get_width() // 2
         y_pos = sh - 40 if is_eval else sh - 35
 
-        hud_text = (f"Level: {level}/{total_levels}    Score: {score}     "
-                    f"Lives: {lives}    Time: {int(time_left)}")
+        hud_text = (f"LEVEL: {level}/{total_levels}    SCORE: {score}     "
+                    f"LIVES: {lives}    TIME: {int(time_left)}")
         if is_eval:
             hud_text += f"    Mode: {wave_mode}"
 
