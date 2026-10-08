@@ -107,7 +107,8 @@ class Menu:
                 push_img = pygame.image.load("./assets/menu-nav/push-space.png")
                 self.screen.blit(push_img, push_img.get_rect(center=(cx - 5, cy - 100)))
             except (FileNotFoundError, pygame.error):
-                self.ui.draw_pulsing_nav(self.screen, "Push SPACE for play", cx - 5, cy + 200)
+                pass
+                # self.ui.draw_pulsing_nav(self.screen, "Push SPACE for play", cx - 5, cy + 200)
 
 
             # 2. Draw Menu Items & Pointer
@@ -133,8 +134,12 @@ class Menu:
 
             # 3. Draw Top 4 Highscores
             if top_scores:
-                hs_title = self.ui.font_regular.render("Top Scores", True, (253, 255, 0))
-                self.screen.blit(hs_title, hs_title.get_rect(center=(cx + 5, cy + 120)))
+                try:
+                    top_scores_img = pygame.image.load("./assets/menu-nav/highscores.png")
+                    self.screen.blit(top_scores_img, top_scores_img.get_rect(center=(cx + 5, cy + 120)))
+                except (FileNotFoundError, pygame.error):
+                    hs_title = self.ui.font_regular.render("TOP SCORES", True, (253, 255, 0))
+                    self.screen.blit(hs_title, hs_title.get_rect(center=(cx + 5, cy + 120)))
                 for idx, hs in enumerate(top_scores):
                     text = f"{idx + 1}. {hs['name']} - {hs['score']} pts"
                     surf = self.ui.font_regular.render(text, True, (255, 255, 255))
@@ -172,7 +177,7 @@ class Menu:
             ins_title = self.ui.font_inst_title.render("INTRUCTIONS", True, self.ui.C_TEXT_WHITE)
             blink_ghost_white = get_sp(10, 4)
             pacman_txt = self.ui.font_inst_regular.render("AVOIDS", True, self.ui.C_TEXT_WHITE)
-            self.screen.blit(ins_title, ins_title.get_rect(center=(cx, bg_rect.top + 40)))
+            self.screen.blit(ins_title, ins_title.get_rect(center=(cx, bg_rect.top + 20)))
 
             self._close_rect = self.ui.draw_close_button(self.screen, bg_rect)
 
@@ -239,7 +244,6 @@ class Menu:
             self.screen.blit(pause_txt, pause_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10)))
 
             # Pulsing ESC hint
-            self.ui.draw_pulsing_nav(self.screen, "PRESS [ENTER] TO RETURN", cx, bg_rect.bottom + 20)
 
 
 

@@ -190,57 +190,26 @@ class Render:
         self.grid_w = grid_w
         self.grid_h = grid_h
 
-        if (hasattr(self, 'screen')
-                and self.screen is not None):
-            cur_w = self.screen.get_width()
-            cur_h = self.screen.get_height()
-            tile_w = cur_w // grid_w
-            tile_h = (cur_h - 50) // grid_h
-            self.tile_size = max(1, min(tile_w, tile_h))
-            maze_w = self.tile_size * grid_w
-            maze_h = self.tile_size * grid_h
-            self.offset_x = (cur_w - maze_w) // 2
-            self.offset_y = (cur_h - 50 - maze_h) // 2
-            return
+        win_w = self.default_max_w
+        win_h = self.default_max_h
 
-        # First launch
-        tile_w = self.max_w // grid_w
-        tile_h = (self.max_h - 50) // grid_h
-        ts = max(1, min(tile_w, tile_h))
+        # Create the window only once to avoid flashing
+        if not hasattr(self, 'screen') or self.screen is None:
+            # os.environ['SDL_VIDEO_CENTERED'] = '1'
+            self.screen = pygame.display.set_mode((win_w, win_h))
+            pygame.display.set_caption("Pac-Man")
 
-        win_w = ts * grid_w
-        win_h = (ts * grid_h) + 50
+        # Add padding to ensure there are grey zones (borders)
+        padding_x = 200
 
-        os.environ['SDL_VIDEO_CENTERED'] = '1'
-        self.resize(win_w, win_h)
-        pygame.display.set_caption("Pac-Man")
+        tile_w = (win_w - padding_x) // grid_w
+        tile_h = (win_h - 50) // grid_h
+        self.tile_size = max(1, min(tile_w, tile_h))
 
-    def restore_window(self) -> None:
-        """Restore the window after fullscreen"""
-        if self.grid_w > 0 and self.grid_h > 0:
-            tile_w = self.default_max_w // self.grid_w
-            tile_h = (self.default_max_h - 50) // self.grid_h
-            ts = max(1, min(tile_w, tile_h))
-            win_w = ts * self.grid_w
-            win_h = (ts * self.grid_h) + 50
-            os.environ['SDL_VIDEO_CENTERED'] = '1'
-            self.screen = pygame.display.set_mode((win_w, win_h), pygame.RESIZABLE)
-            self.resize(win_w, win_h)
-
-    def resize(self, window_w: int, window_h: int) -> None:
-        """Recalculate tile size and center offsets upon resize."""
-        self.max_w, self.max_h = window_w, window_h
-        size = (window_w, window_h)
-        self.screen = pygame.display.set_mode(size, pygame.RESIZABLE)
-
-        if self.grid_w > 0 and self.grid_h > 0:
-            tile_w = window_w // self.grid_w
-            tile_h = (window_h - 50) // self.grid_h
-            self.tile_size = max(1, min(tile_w, tile_h))
-            maze_w = self.tile_size * self.grid_w
-            maze_h = self.tile_size * self.grid_h
-            self.offset_x = (window_w - maze_w) // 2
-            self.offset_y = (window_h - 50 - maze_h) // 2
+        maze_w = self.tile_size * grid_w
+        maze_h = self.tile_size * grid_h
+        self.offset_x = (win_w - maze_w) // 2
+        self.offset_y = (win_h - 50 - maze_h) // 2
 
         self.reload_scales()
 

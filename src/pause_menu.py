@@ -44,12 +44,8 @@ class PauseMenu:
             if ev.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif ev.type == pygame.WINDOWRESIZED:
-                app.render.resize(ev.x, ev.y)
             elif ev.type == pygame.KEYDOWN:
-                if ev.key == pygame.K_ESCAPE:
-                    app.render.restore_window()
-                elif ev.key in (pygame.K_w, pygame.K_UP):
+                if ev.key in (pygame.K_w, pygame.K_UP):
                     self.selected_item = (self.selected_item - 1) % len(labels)
                     if app.is_eval and self.selected_item == separator_idx:
                         self.selected_item = separator_idx - 1
@@ -187,12 +183,6 @@ class PauseMenu:
             rect = surf.get_rect(center=(cx, start_y + (i * 35)))
             self._menu_rects.append(rect)
             self.screen.blit(surf, rect)
-
-            if i == self.selected_item:
-                mid_y = rect.centery
-                tip_x = rect.left - 15
-                self.ui.draw_bullet(self.screen, tip_x, mid_y,
-                                    color=color, is_centered=True)
 
     def _execute_pause_action(self, app: "Application") -> None:
         if self.selected_item == 0:

@@ -17,8 +17,7 @@ class Highscorescreen:
             if ev.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif ev.type == pygame.VIDEORESIZE:
-                app.render.resize(ev.w, ev.h)
+
             elif ev.type == pygame.KEYDOWN or ev.type == pygame.MOUSEBUTTONDOWN:
                 app.app_state = "MENU"
 
@@ -29,7 +28,7 @@ class Highscorescreen:
         self.ui.draw_close_button(self.screen, bg_rect)
 
         title = self.ui.font_title_small.render("TOP 10 SCORES", True, self.ui.C_TEXT_WHITE)
-        self.screen.blit(title, title.get_rect(center=(cx, bg_rect.top + 40)))
+        self.screen.blit(title, title.get_rect(center=(cx, bg_rect.top + 20)))
 
         start_y = bg_rect.top + 95
         step_y = max(20, (bg_rect.height - 110) // 10)
@@ -55,13 +54,12 @@ class Highscorescreen:
             self.screen.blit(score_txt, score_rect)
 
         # Pulsing text
-        self.ui.draw_pulsing_nav(self.screen, "PRESS [ENTER] TO RETURN", cx, bg_rect.bottom + 20)
 
         pygame.display.flip()
 
 if __name__ == "__main__":
     pygame.init()
-    screen = pygame.display.set_mode((800, 600), pygame.RESIZABLE)
+    screen = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("Highscore Screen Test")
 
     class MockHighscores:
@@ -85,7 +83,7 @@ if __name__ == "__main__":
             class MockRender:
                 def resize(self, w, h):
                     global screen
-                    screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
+                    screen = pygame.display.set_mode((w, h))
                     hs_screen.screen = screen
             self.render = MockRender()
 

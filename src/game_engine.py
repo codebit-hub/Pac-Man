@@ -200,9 +200,6 @@ class GameEngine:
                         self.player.set_direction(Direction.LEFT)
                     elif event.key in (pygame.K_d, pygame.K_RIGHT):
                         self.player.set_direction(Direction.RIGHT)
-                if event.type == pygame.VIDEORESIZE:
-                    window_w, window_h = event.w, event.h
-                    self.renderer.resize(window_w, window_h)
 
             # Update backend
             self._update_wave_timers(delta_time)

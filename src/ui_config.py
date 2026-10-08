@@ -4,9 +4,6 @@ Sets RGB color and font constants.
 """
 import pygame
 import os
-import math
-import time
-
 
 class UIConfig:
     """Centralized UI settings and common drawing routines."""
@@ -57,6 +54,21 @@ class UIConfig:
         MLXUtils.draw_rect(screen, self.C_BOX_BG, bg_rect)
         return bg_rect
 
+    def draw_bullet(self, screen: pygame.Surface, x: int, y: int,
+                    color: tuple | None = None,
+                    is_centered: bool = False) -> None:
+        """Draws a standard triangle bullet point."""
+
+        c = color if color else self.C_TEXT_WHITE
+        mid_y = y if is_centered else y + 15
+        from renderer import MLXUtils
+        MLXUtils.draw_triangle(
+            screen, c,
+            (x - 10, mid_y - 7),
+            (x - 10, mid_y + 7),
+            (x, mid_y)
+        )
+
     def draw_close_button(self, screen: pygame.Surface,
                           bg_rect: pygame.Rect) -> pygame.Rect:
         """Draws the 'X' close button at the top-right"""
@@ -79,32 +91,6 @@ class UIConfig:
         close_surf = self.close_font.render("X", True, close_color)
         screen.blit(close_surf, close_rect)
         return close_rect
-
-    def draw_bullet(self, screen: pygame.Surface, x: int, y: int,
-                    color: tuple | None = None,
-                    is_centered: bool = False) -> None:
-        """Draws a standard triangle bullet point."""
-
-        c = color if color else self.C_TEXT_WHITE
-        mid_y = y if is_centered else y + 15
-        from renderer import MLXUtils
-        MLXUtils.draw_triangle(
-            screen, c,
-            (x - 10, mid_y - 7),
-            (x - 10, mid_y + 7),
-            (x, mid_y)
-        )
-
-    def draw_pulsing_nav(self, screen: pygame.Surface, text: str,
-                         cx: int, cy: int) -> None:
-
-        """Draws pulsing text at the given center coordinates."""
-        current_time = int(time.perf_counter() * 1000)
-        pulse = (math.sin(current_time * 0.005) + 1) / 2
-        brightness = int(100 + 155 * pulse)
-        color = (brightness, brightness, brightness)
-        nav_return = self.font_regular.render(text, True, color)
-        screen.blit(nav_return, nav_return.get_rect(center=(cx, cy)))
 
     def load_icon(self) -> None:
         """Loads pacman icon for program"""
