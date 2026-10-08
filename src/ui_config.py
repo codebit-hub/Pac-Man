@@ -15,7 +15,7 @@ class UIConfig:
 
         # Colors
         self.C_BG = (0, 0, 0)
-        self.C_BOX_BG = (210,117,206)
+        self.C_BOX_BG = (210, 117, 206)
         self.C_TEXT_WHITE = (255, 255, 255)
         self.C_TEXT_YELLOW = (255, 255, 0)
         self.C_TEXT_PURPLE = (210, 117, 206)
@@ -25,7 +25,7 @@ class UIConfig:
 
         self.C_GOLD = (255, 215, 0)
         self.C_SILVER = (192, 192, 192)
-        self.C_BRONZE = (164,101,40)
+        self.C_BRONZE = (164, 101, 40)
 
         self.GAME_PURPLE = (210, 117, 206)
         self.GAME_PATH = (20, 20, 40)
@@ -38,7 +38,7 @@ class UIConfig:
         self.font_inst_regular = pygame.font.SysFont(None, 18)
         self.close_font = pygame.font.SysFont(None, 26)
         self.font_hud = pygame.font.SysFont(None, 20)
-        self.pause_regular = pygame.font.SysFont(None, 26)
+        self.pause_regular = pygame.font.SysFont(None, 36)
 
     def draw_panel_bg(
             self,
@@ -87,7 +87,8 @@ class UIConfig:
         c = color if color else self.C_TEXT_WHITE
         mid_y = y if is_centered else y + 15
         from renderer import MLXUtils
-        MLXUtils.draw_triangle(screen, c,
+        MLXUtils.draw_triangle(
+            screen, c,
             (x - 10, mid_y - 7),
             (x - 10, mid_y + 7),
             (x, mid_y)
@@ -109,13 +110,15 @@ class UIConfig:
             import sys
             base = getattr(
                 sys, '_MEIPASS', os.path.join(os.path.dirname(__file__), "..")
-                )
+            )
             pacman_icon = os.path.normpath(os.path.join(
                 base, "assets", "pacman", "pacman-right", "1.png"
             ))
             loaded_img = pygame.image.load(pacman_icon)
             orig_w, orig_h = loaded_img.get_size()
-            padded_img = pygame.Surface((orig_w * 2, orig_h * 2), pygame.SRCALPHA)
+            padded_img = pygame.Surface(
+                (orig_w * 2, orig_h * 2), pygame.SRCALPHA
+            )
             padded_img.blit(loaded_img, (orig_w // 2, orig_h // 2))
             pygame.display.set_icon(padded_img)
         except (FileNotFoundError, pygame.error):

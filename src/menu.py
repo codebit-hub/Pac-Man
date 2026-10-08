@@ -101,7 +101,7 @@ class Menu:
 
             # 1. Draw Title
             title = self.ui.font_title.render("Pac-Man", True, (253, 255, 0))
-            self.screen.blit(title, title.get_rect(center=(cx - 20, cy - 200)))
+            self.screen.blit(title, title.get_rect(center=(cx - 5, cy - 200)))
             self.ui.draw_pulsing_nav(self.screen, "Push SPACE for play", cx - 5, cy - 100)
 
 
@@ -126,11 +126,11 @@ class Menu:
             # 3. Draw Top 4 Highscores
             if top_scores:
                 hs_title = self.ui.font_regular.render("Top Scores", True, (253, 255, 0))
-                self.screen.blit(hs_title, hs_title.get_rect(center=(cx, cy + 120)))
+                self.screen.blit(hs_title, hs_title.get_rect(center=(cx + 5, cy + 120)))
                 for idx, hs in enumerate(top_scores):
-                    text = f"{idx + 1}. {hs['name']} - {hs['score']} PTS"
+                    text = f"{idx + 1}. {hs['name']} - {hs['score']} pts"
                     surf = self.ui.font_regular.render(text, True, (255, 255, 255))
-                    self.screen.blit(surf, surf.get_rect(center=(cx, cy + 155 + (idx * 25))))
+                    self.screen.blit(surf, surf.get_rect(center=(cx + 10, cy + 155 + (idx * 25))))
 
             # 4. Draw Animation
             start_x = cx - 90
@@ -142,12 +142,12 @@ class Menu:
                 self.anime_x = start_x
 
             # Draw only once per frame at the current position
-            MLXUtils.draw_circle(self.screen, (255,255,255), (int(self.anime_x + 38), int(y_pos + 15)), 5)
-            self.screen.blit(pacman, (self.anime_x + 76, y_pos))
-            self.screen.blit(clyde, (self.anime_x + 114, y_pos))
-            self.screen.blit(blinky, (self.anime_x + 152, y_pos))
-            self.screen.blit(pinky, (self.anime_x + 190, y_pos))
-            self.screen.blit(inky, (self.anime_x + 228, y_pos))
+            MLXUtils.draw_circle(self.screen, (255,255,255), (int(self.anime_x), int(y_pos + 15)), 5)
+            self.screen.blit(pacman, (self.anime_x + 36, y_pos))
+            self.screen.blit(clyde, (self.anime_x + 76, y_pos))
+            self.screen.blit(blinky, (self.anime_x + 108, y_pos))
+            self.screen.blit(pinky, (self.anime_x + 144, y_pos))
+            self.screen.blit(inky, (self.anime_x + 180, y_pos))
 
             self._instruction_rect = self._menu_rects[2]
 
