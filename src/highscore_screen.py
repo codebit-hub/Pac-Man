@@ -1,5 +1,6 @@
 import pygame
 import sys
+import time
 from ui_config import UIConfig
 
 class Highscorescreen:
@@ -7,7 +8,7 @@ class Highscorescreen:
         self.screen = screen
         self.highscores = highscores
         self.ui = UIConfig()
-    
+
     def _run_highscore_screen(self, app) -> None:
         """Draw Highscore leaderboard."""
         cx = self.screen.get_width() // 2
@@ -23,10 +24,10 @@ class Highscorescreen:
 
         self.screen.fill((0, 0, 0))
         bg_rect = self.ui.draw_panel_bg(self.screen, cx, cy)
-        
+
         # X button
         self.ui.draw_close_button(self.screen, bg_rect)
-        
+
         title = self.ui.font_title_small.render("TOP 10 SCORES", True, self.ui.C_TEXT_WHITE)
         self.screen.blit(title, title.get_rect(center=(cx, bg_rect.top + 40)))
 
@@ -47,7 +48,7 @@ class Highscorescreen:
             name_txt = self.ui.font_regular.render(f"{i+1}. {hs['name']}", True, color)
             name_rect = name_txt.get_rect(midleft=(bg_rect.left + 40, start_y + (i * step_y)))
             self.screen.blit(name_txt, name_rect)
-            
+
             # Right align score
             score_txt = self.ui.font_regular.render(f"{hs['score']}", True, color)
             score_rect = score_txt.get_rect(midright=(bg_rect.right - 40, start_y + (i * step_y)))
@@ -62,7 +63,7 @@ if __name__ == "__main__":
     pygame.init()
     screen = pygame.display.set_mode((800, 600), pygame.RESIZABLE)
     pygame.display.set_caption("Highscore Screen Test")
-    
+
     class MockHighscores:
         def __init__(self):
             self.scores = [
@@ -77,7 +78,7 @@ if __name__ == "__main__":
                 {"name": "TEST", "score": 100},
                 {"name": "LOSER", "score": 0},
             ]
-            
+
     class MockApp:
         def __init__(self):
             self.app_state = "HIGHSCORES"
@@ -87,13 +88,18 @@ if __name__ == "__main__":
                     screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
                     hs_screen.screen = screen
             self.render = MockRender()
-            
+
     mock_app = MockApp()
     hs_screen = Highscorescreen(screen, MockHighscores())
-    
-    clock = pygame.time.Clock()
+
+    last_time = time.perf_counter()
     while mock_app.app_state == "HIGHSCORES":
         hs_screen._run_highscore_screen(mock_app)
-        clock.tick(60)
-        
+
+        current_time = time.perf_counter()
+        dt = current_time - last_time
+        if dt < (1.0 / 60.0):
+            time.sleep((1.0 / 60.0) - dt)
+        last_time = time.perf_counter()
+
     pygame.quit()

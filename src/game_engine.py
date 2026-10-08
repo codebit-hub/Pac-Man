@@ -1,6 +1,7 @@
 import os
 import sys
 import pygame
+import time
 
 from maze_loader import MazeLoader
 from player import Player, Direction
@@ -171,11 +172,21 @@ class GameEngine:
     def run(self) -> None:
         """Main game loop"""
 
-        clock = pygame.time.Clock()
+        last_time = time.perf_counter()
 
         while self.running:
-            delta_time = clock.tick(60) / 1000.0
+            # delta_time = clock.tick(60) / 1000.0
+            current_time = time.perf_counter()
+            delta_time = current_time - last_time
 
+            # Cap framerate to about 60 FPS
+            if delta_time < (1.0 / 60.0):
+                time.sleep((1.0 / 60.0) - delta_time)
+                current_time = time.perf_counter()
+                delta_time = current_time - last_time
+
+            last_time = current_time
+            
             # Event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -240,8 +251,3 @@ class GameEngine:
 if __name__ == "__main__":
     game = GameEngine()
     game.run()
-
-
-
-
-

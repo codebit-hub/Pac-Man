@@ -1,6 +1,7 @@
 import pygame
 import os
 import math
+import time
 from typing import Optional, cast
 
 from maze_loader import MazeLoader
@@ -601,9 +602,18 @@ if __name__ == "__main__":
     ))
     render.load_spritesheet(_sheet_path)
     render.load_player_frames()
-    clock = pygame.time.Clock()
+
+    last_time = time.perf_counter()
     run = True
     while run:
+        current_time = time.perf_counter()
+        delta_time = current_time - last_time
+        if delta_time < (1.0 / 60.0):
+            time.sleep((1.0 / 60.0) - delta_time)
+            current_time = time.perf_counter()
+            delta_time = current_time - last_time
+        last_time = current_time
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -617,7 +627,6 @@ if __name__ == "__main__":
                 elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
                     player.set_direction(Direction.RIGHT)
 
-        delta_time = clock.tick(60) / 1000
         player.update(delta_time, grid)
 
         render.screen.fill((20, 20, 40))
