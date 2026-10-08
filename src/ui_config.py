@@ -31,14 +31,14 @@ class UIConfig:
         self.GAME_PATH = (20, 20, 40)
 
         # Fonts
-        self.font_regular = pygame.font.SysFont(None, 36)
-        self.font_title = pygame.font.SysFont(None, 86)
-        self.font_title_small = pygame.font.SysFont(None, 24)
-        self.font_inst_title = pygame.font.SysFont(None, 24)
-        self.font_inst_regular = pygame.font.SysFont(None, 18)
-        self.close_font = pygame.font.SysFont(None, 26)
-        self.font_hud = pygame.font.SysFont(None, 20)
-        self.pause_regular = pygame.font.SysFont(None, 36)
+        self.font_regular = pygame.font.SysFont(None, 13)
+        self.font_title = pygame.font.SysFont(None, 13)
+        self.font_title_small = pygame.font.SysFont(None, 13)
+        self.font_inst_title = pygame.font.SysFont(None, 13)
+        self.font_inst_regular = pygame.font.SysFont(None, 13)
+        self.close_font = pygame.font.SysFont(None, 13)
+        self.font_hud = pygame.font.SysFont(None, 13)
+        self.pause_regular = pygame.font.SysFont(None, 13)
 
     def draw_panel_bg(
             self,
