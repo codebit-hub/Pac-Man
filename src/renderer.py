@@ -67,10 +67,10 @@ class MLXUtils:
                 for x in range(max(0, x_start), min(surf.get_width(), x_start + w)):
                     surf.set_at((x, y), color)
         else:
-            MLXUtils.draw_line(surf, color, (x_start, y_start), (x_start+w-1, y_start), width)
-            MLXUtils.draw_line(surf, color, (x_start, y_start+h-1), (x_start+w-1, y_start+h-1), width)
-            MLXUtils.draw_line(surf, color, (x_start, y_start), (x_start, y_start+h-1), width)
-            MLXUtils.draw_line(surf, color, (x_start+w-1, y_start), (x_start+w-1, y_start+h-1), width)
+            MLXUtils.draw_line(surf, color, (x_start, y_start), (x_start + w - 1, y_start), width)
+            MLXUtils.draw_line(surf, color, (x_start, y_start + h - 1), (x_start + w - 1, y_start + h - 1), width)
+            MLXUtils.draw_line(surf, color, (x_start, y_start), (x_start, y_start + h - 1), width)
+            MLXUtils.draw_line(surf, color, (x_start + w - 1, y_start), (x_start + w - 1, y_start + h - 1), width)
 
     @staticmethod
     def draw_line(surf: pygame.Surface, color: tuple, start: tuple, end: tuple, width: int = 1):
@@ -106,7 +106,7 @@ class MLXUtils:
         if width == 0:
             for y in range(-radius, radius + 1):
                 for x in range(-radius, radius + 1):
-                    if x*x + y*y <= r2:
+                    if x * x + y * y <= r2:
                         px, py = cx + x, cy + y
                         if 0 <= px < surf.get_width() and 0 <= py < surf.get_height():
                             surf.set_at((px, py), color)
@@ -114,7 +114,7 @@ class MLXUtils:
             in_r2 = (radius - width) * (radius - width)
             for y in range(-radius, radius + 1):
                 for x in range(-radius, radius + 1):
-                    d2 = x*x + y*y
+                    d2 = x * x + y * y
                     if in_r2 <= d2 <= r2:
                         px, py = cx + x, cy + y
                         if 0 <= px < surf.get_width() and 0 <= py < surf.get_height():
@@ -127,15 +127,15 @@ class MLXUtils:
         max_x = int(max(p1[0], p2[0], p3[0]))
         min_y = int(min(p1[1], p2[1], p3[1]))
         max_y = int(max(p1[1], p2[1], p3[1]))
-        
+
         min_x = max(0, min_x)
         min_y = max(0, min_y)
         max_x = min(surf.get_width() - 1, max_x)
         max_y = min(surf.get_height() - 1, max_y)
-        
+
         def sign(p1, p2, p3):
             return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
-            
+
         for y in range(min_y, max_y + 1):
             for x in range(min_x, max_x + 1):
                 d1 = sign((x, y), p1, p2)
@@ -145,7 +145,6 @@ class MLXUtils:
                 has_pos = (d1 > 0) or (d2 > 0) or (d3 > 0)
                 if not (has_neg and has_pos):
                     surf.set_at((x, y), color)
-
 
 
 class Render:
@@ -248,7 +247,7 @@ class Render:
         """Rescale all textures based on current tile_size."""
         if hasattr(self, 'orig_dot_img') and self.orig_dot_img:
             self.dot_img = MLXUtils.scale_image(self.orig_dot_img, self.tile_size, self.tile_size)
-        
+
         if hasattr(self, 'orig_player_frames') and self.orig_player_frames:
             p_size = max(1, int(self.tile_size * 0.8))
             for dir_key, orig_frames in self.orig_player_frames.items():
@@ -378,15 +377,15 @@ class Render:
 
         if self.sheet is None:
             return
-            
+
         base = 16
         p_size = max(1, int(self.tile_size * 0.8))
 
         dir_cols = {
             Direction.RIGHT: 2,
-            Direction.LEFT:  0,
-            Direction.DOWN:  4,
-            Direction.UP:    6,
+            Direction.LEFT: 0,
+            Direction.DOWN: 4,
+            Direction.UP: 6,
         }
 
         for direction, col in dir_cols.items():
@@ -396,13 +395,13 @@ class Render:
                 x = col * base + 1
                 y = anim_row * base
                 rect = pygame.Rect(x, y, base * 2, base * 2)
-                
+
                 if x + rect.w <= self.sheet.get_width() and y + rect.h <= self.sheet.get_height():
                     try:
                         raw = self.sheet.subsurface(rect).copy()
                         raw.set_colorkey((255, 0, 255))
                         orig_frames.append(raw)
-                        
+
                         scaled = MLXUtils.scale_image(raw, p_size, p_size)
                         scaled.set_colorkey((255, 0, 255))
                         scaled_frames.append(scaled)
@@ -412,7 +411,7 @@ class Render:
             # If no frames loaded, use a solid color fallback to avoid crashes
             if not orig_frames:
                 surf = pygame.Surface((base * 2, base * 2))
-                surf.fill((255, 255, 0)) # Yellow square fallback
+                surf.fill((255, 255, 0))  # Yellow square fallback
                 orig_frames.append(surf)
                 scaled_frames.append(MLXUtils.scale_image(surf, p_size, p_size))
 
@@ -422,13 +421,13 @@ class Render:
             cx = closed_col * base + 1
             cy = closed_row * base
             crect = pygame.Rect(cx, cy, base * 2, base * 2)
-            
+
             if cx + crect.w <= self.sheet.get_width() and cy + crect.h <= self.sheet.get_height():
                 try:
                     craw = self.sheet.subsurface(crect).copy()
                     craw.set_colorkey((255, 0, 255))
                     orig_frames.append(craw)
-                    
+
                     cscaled = MLXUtils.scale_image(craw, p_size, p_size)
                     cscaled.set_colorkey((255, 0, 255))
                     scaled_frames.append(cscaled)
@@ -494,11 +493,10 @@ class Render:
         frame_idx = max(0, min(frame_idx, len(frames) - 1))
         px = grid_x * self.tile_size + self.offset_x
         py = grid_y * self.tile_size + self.offset_y
-        
+
         img = frames[frame_idx]
         offset_center = (self.tile_size - img.get_width()) // 2
         self.screen.blit(img, (px + offset_center, py + offset_center))
-
 
     def render_frame(self) -> None:
         """Flip the display buffer to the monitor."""
@@ -523,7 +521,7 @@ class Render:
 
         if sprite:
             offset_center = (self.tile_size - sprite.get_width()) // 2
-            self.screen.blit(sprite, (px + offset_center, py + offset_y + offset_center))
+            self.screen.blit(sprite, (px + offset_center + 2, py + offset_y + offset_center + 2))
 
     def draw_hud(self, score: int, lives: int, time_left: float,
                  level: int, total_levels: int, wave_mode: str,

@@ -106,6 +106,7 @@ class UIConfig:
         screen.blit(nav_return, nav_return.get_rect(center=(cx, cy)))
 
     def load_icon(self) -> None:
+        """Loads pacman icon for program"""
         try:
             import sys
             base = getattr(

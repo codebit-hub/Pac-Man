@@ -44,8 +44,8 @@ class PauseMenu:
             if ev.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif ev.type == pygame.VIDEORESIZE:
-                app.render.resize(ev.w, ev.h)
+            elif ev.type == pygame.WINDOWRESIZED:
+                app.render.resize(ev.x, ev.y)
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
                     app.render.restore_window()
