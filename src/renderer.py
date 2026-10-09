@@ -148,7 +148,7 @@ class MLXUtils:
 
 
 class Render:
-    def __init__(self, max_width: int = 1260, max_heigth: int = 800) -> None:
+    def __init__(self, max_width: int = 900, max_heigth: int = 800) -> None:
         """Initialize the renderer with safe max window bounds."""
         # 1. Initialization and UI
         pygame.init()
@@ -198,7 +198,7 @@ class Render:
             pygame.display.set_caption("Pac-Man")
 
         # Add padding to ensure there are grey zones (borders)
-        padding_x = 200
+        padding_x = 50
 
         tile_w = (win_w - padding_x) // grid_w
         tile_h = (win_h - 50) // grid_h

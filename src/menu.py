@@ -268,7 +268,6 @@ class Menu:
             icon = MLXUtils.colorize_icon(self._mute_icon, 220, 50, 50)
             self.screen.blit(icon, (x, y))
             # Draw a diagonal strike-through line
-            MLXUtils.draw_line(self.screen, (220, 50, 50), (x + 4, y + icon_size - 4), (x + icon_size - 4, y + 4), 3)
         else:
             # Apply white tint manually
             icon = MLXUtils.colorize_icon(self._mute_icon, 255, 255, 255)
