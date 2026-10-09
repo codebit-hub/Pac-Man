@@ -157,13 +157,13 @@ class PauseMenu:
             title = MLXUtils.scale_image(surf, 200, 200)
         except (FileNotFoundError, pygame.error, ImportError):
             color = self.ui.C_TEXT_YELLOW
-            title = self.ui.font_title.render("PAUSED", True, color)
+            title = self.ui.font_regular.render("PAUSED", True, color)
 
         self.screen.blit(title, title.get_rect(center=(cx, cy - 200)))
 
         self._menu_rects = []
         start_y = cy - 110
-        pause_text = self.ui.pause_regular
+        pause_text = self.ui.font_regular
 
         for i, label in enumerate(labels):
             if i == separator_idx:

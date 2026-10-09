@@ -1,15 +1,11 @@
-"""
-Sets RGB color and font constants.
-
-"""
 import pygame
-import os
+
 
 class UIConfig:
     """Centralized UI settings and common drawing routines."""
 
     def __init__(self) -> None:
-        """Sets up colors, fonts, """
+        """Sets up colors, fonts"""
 
         # Colors
         self.C_BG = (0, 0, 0)
@@ -28,39 +24,24 @@ class UIConfig:
         self.GAME_PURPLE = (210, 117, 206)
         self.GAME_PATH = (20, 20, 40)
 
-        # Fonts
+        # Font
         self.font_regular = pygame.font.SysFont(None, 13)
-        self.font_title = pygame.font.SysFont(None, 36)
-        self.font_title_small = pygame.font.SysFont(None, 13)
-        self.font_inst_title = pygame.font.SysFont(None, 13)
-        self.font_inst_regular = pygame.font.SysFont(None, 13)
-        self.close_font = pygame.font.SysFont(None, 13)
-        self.font_hud = pygame.font.SysFont(None, 13)
-        self.pause_regular = pygame.font.SysFont(None, 13)
 
-    def draw_panel_bg(
-            self,
-            screen: pygame.Surface,
-            cx: int,
-            cy: int
-    ) -> pygame.Rect:
+    def draw_panel_bg(self, screen: pygame.Surface,
+                      cx: int, cy: int) -> pygame.Rect:
         """Draws the standard cyan UI panel and returns its Rect."""
 
-        panel_w = min(int(screen.get_width() * 0.9), 600)
-        panel_h = min(int(screen.get_height() * 0.95), 420)
-        bg_rect = pygame.Rect(0, 0, panel_w, panel_h)
+        bg_rect = pygame.Rect(0, 0, 600, 420)
         bg_rect.center = (cx, cy)
         from renderer import MLXUtils
         MLXUtils.draw_rect(screen, self.C_BOX_BG, bg_rect)
         return bg_rect
 
-    def draw_bullet(self, screen: pygame.Surface, x: int, y: int,
-                    color: tuple | None = None,
-                    is_centered: bool = False) -> None:
+    def draw_bullet(self, screen: pygame.Surface, x: int, y: int) -> None:
         """Draws a standard triangle bullet point."""
 
-        c = color if color else self.C_TEXT_WHITE
-        mid_y = y if is_centered else y + 15
+        c = self.C_TEXT_WHITE
+        mid_y = y + 15
         from renderer import MLXUtils
         MLXUtils.draw_triangle(
             screen, c,
@@ -76,7 +57,7 @@ class UIConfig:
         mouse_pos = pygame.mouse.get_pos()
         close_margin = 20
 
-        width, height = self.close_font.size("X")
+        width, height = self.font_regular.size("X")
 
         x = bg_rect.right - close_margin
         y = bg_rect.top + close_margin
@@ -88,26 +69,6 @@ class UIConfig:
         else:
             close_color = self.C_CLOSE_NORMAL
 
-        close_surf = self.close_font.render("X", True, close_color)
+        close_surf = self.font_regular.render("X", True, close_color)
         screen.blit(close_surf, close_rect)
         return close_rect
-
-    def load_icon(self) -> None:
-        """Loads pacman icon for program"""
-        try:
-            import sys
-            base = getattr(
-                sys, '_MEIPASS', os.path.join(os.path.dirname(__file__), "..")
-            )
-            pacman_icon = os.path.normpath(os.path.join(
-                base, "assets", "pacman", "pacman-right", "1.png"
-            ))
-            loaded_img = pygame.image.load(pacman_icon)
-            orig_w, orig_h = loaded_img.get_size()
-            padded_img = pygame.Surface(
-                (orig_w * 2, orig_h * 2), pygame.SRCALPHA
-            )
-            padded_img.blit(loaded_img, (orig_w // 2, orig_h // 2))
-            pygame.display.set_icon(padded_img)
-        except (FileNotFoundError, pygame.error):
-            print("Warning: Couldn't load pacman icon")

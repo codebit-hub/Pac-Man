@@ -27,7 +27,7 @@ class Highscorescreen:
         # X button
         self.ui.draw_close_button(self.screen, bg_rect)
 
-        title = self.ui.font_title_small.render("TOP 10 SCORES", True, self.ui.C_TEXT_WHITE)
+        title = self.ui.font_regular.render("TOP 10 SCORES", True, self.ui.C_TEXT_WHITE)
         self.screen.blit(title, title.get_rect(center=(cx, bg_rect.top + 20)))
 
         start_y = bg_rect.top + 95

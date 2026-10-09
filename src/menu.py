@@ -100,7 +100,7 @@ class Menu:
                 self.screen.blit(img, img.get_rect(center=(cx, cy - 200)))
             except (FileNotFoundError, pygame.error) as err:
                 print("Couldn't load PACMAN title in menu, loading default text..")
-                title = self.ui.font_title.render("Pac-Man", True, (253, 255, 0))
+                title = self.ui.font_regular.render("Pac-Man", True, (253, 255, 0))
                 self.screen.blit(title, title.get_rect(center=(cx - 5, cy - 200)))
 
             try:
@@ -108,7 +108,6 @@ class Menu:
                 self.screen.blit(push_img, push_img.get_rect(center=(cx - 5, cy - 100)))
             except (FileNotFoundError, pygame.error):
                 pass
-                # self.ui.draw_pulsing_nav(self.screen, "Push SPACE for play", cx - 5, cy + 200)
 
 
             # 2. Draw Menu Items & Pointer
@@ -174,9 +173,9 @@ class Menu:
             # --- Panel ---
             bg_rect = self.ui.draw_panel_bg(self.screen, cx, cy)
 
-            ins_title = self.ui.font_inst_title.render("INTRUCTIONS", True, self.ui.C_TEXT_WHITE)
+            ins_title = self.ui.font_regular.render("INTRUCTIONS", True, self.ui.C_TEXT_WHITE)
             blink_ghost_white = get_sp(10, 4)
-            pacman_txt = self.ui.font_inst_regular.render("AVOIDS", True, self.ui.C_TEXT_WHITE)
+            pacman_txt = self.ui.font_regular.render("AVOIDS", True, self.ui.C_TEXT_WHITE)
             self.screen.blit(ins_title, ins_title.get_rect(center=(cx, bg_rect.top + 20)))
 
             self._close_rect = self.ui.draw_close_button(self.screen, bg_rect)
@@ -201,7 +200,7 @@ class Menu:
 
             y_pos = bg_rect.top + 120
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            dots_txt = self.ui.font_inst_regular.render(f"PACGUMS SCORE {self.pacgums_power} POINTS", True, self.ui.C_TEXT_WHITE)
+            dots_txt = self.ui.font_regular.render(f"PACGUMS SCORE {self.pacgums_power} POINTS", True, self.ui.C_TEXT_WHITE)
             MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 35), int(y_pos + 15)), 5)
             MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 50), int(y_pos + 15)), 5)
             MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 65), int(y_pos + 15)), 5)
@@ -209,8 +208,8 @@ class Menu:
 
             y_pos = bg_rect.top + 170
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            pacgums_nb_txt = self.ui.font_inst_regular.render(f"{self.pacgums_nb}", True, self.ui.C_TEXT_WHITE)
-            pacgums_power_txt = self.ui.font_inst_regular.render(f"FLASHING SUPER PACGUMS SCORE {self.super_pacgums_power} POINTS", True, self.ui.C_TEXT_WHITE)
+            pacgums_nb_txt = self.ui.font_regular.render(f"{self.pacgums_nb}", True, self.ui.C_TEXT_WHITE)
+            pacgums_power_txt = self.ui.font_regular.render(f"FLASHING SUPER PACGUMS SCORE {self.super_pacgums_power} POINTS", True, self.ui.C_TEXT_WHITE)
             self.screen.blit(pacgums_nb_txt, pacgums_nb_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10)))
             MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 65), int(y_pos + 12)), 10)
             self.screen.blit(pacgums_power_txt, pacgums_power_txt.get_rect(topleft=(bg_rect.left + 90, y_pos + 10)))
@@ -218,14 +217,14 @@ class Menu:
             y_pos = bg_rect.top + 220
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
 
-            energezing_pc_txt = self.ui.font_inst_regular.render("AFTER POWER UP", True, self.ui.C_TEXT_WHITE)
+            energezing_pc_txt = self.ui.font_regular.render("AFTER POWER UP", True, self.ui.C_TEXT_WHITE)
             pc_rect = energezing_pc_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10))
             self.screen.blit(energezing_pc_txt, pc_rect)
 
             pacman_rect = pacman.get_rect(left=pc_rect.right + 10, centery=pc_rect.centery)
             self.screen.blit(pacman, pacman_rect)
 
-            energezing_ghost_txt = self.ui.font_inst_regular.render("CAN EAT", True, self.ui.C_TEXT_WHITE)
+            energezing_ghost_txt = self.ui.font_regular.render("CAN EAT", True, self.ui.C_TEXT_WHITE)
             ghost_txt_rect = energezing_ghost_txt.get_rect(left=pacman_rect.right + 10, centery=pc_rect.centery)
             self.screen.blit(energezing_ghost_txt, ghost_txt_rect)
 
@@ -234,13 +233,13 @@ class Menu:
 
             y_pos = bg_rect.top + 270
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            controls_txt = self.ui.font_inst_regular.render("CONTROLS: [W][A][S][D] OR ARROWS TO MOVE", True, self.ui.C_TEXT_WHITE)
+            controls_txt = self.ui.font_regular.render("CONTROLS: [W][A][S][D] OR ARROWS TO MOVE", True, self.ui.C_TEXT_WHITE)
             self.screen.blit(controls_txt, controls_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10)))
 
             # Added Pause Instructions
             y_pos = bg_rect.top + 310
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            pause_txt = self.ui.font_inst_regular.render("PAUSE: PRESS [P] OR [SPACE]", True, self.ui.C_TEXT_WHITE)
+            pause_txt = self.ui.font_regular.render("PAUSE: PRESS [P] OR [SPACE]", True, self.ui.C_TEXT_WHITE)
             self.screen.blit(pause_txt, pause_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10)))
 
             # Pulsing ESC hint
