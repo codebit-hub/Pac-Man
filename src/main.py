@@ -165,7 +165,7 @@ class Application:
     def _init_ghosts(self) -> None:
         """Spawn ghosts with optional randomization."""
         w, h = len(self.grid[0]), len(self.grid)
-        locs = [(w - 2, 1), (3, 1), (w - 2, h - 2), (1, h - 2)]
+        locs = [(w - 2, 1), (1, 1), (w - 2, h - 2), (1, h - 2)]
 
         # Adding ghost color randomization
         colors = ["Red", "Pink", "Cyan", "Orange"]

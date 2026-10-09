@@ -79,6 +79,10 @@ cd pac-man-game
 
 *(Note: The executable automatically discovers the bundled `config.json` and assets; no command-line arguments are required).*
 
+#### 'How-to-Play' Instructions
+
+Alongside the executable in the extracted directory, you will find a 'HOW_TO_PLAY.txt' file that you can open for a quick reference on controls, scoring, and gameplay mechanics.
+
 ---
 
 ## Configuration
@@ -126,23 +130,36 @@ The backend is built around a central `Application` orchestrator that acts as a 
 
 **Front-End Features & Trade-Offs:**
 * **Retro UI & Animations:** The front-end renders a fully responsive grid matching the configuration file. It features animated menus, animated entity sprites using a spritesheet, and a persistent bottom HUD (Score, Lives, Level, Timer).
+<<<<<<< HEAD
 * **Trade-offs:** We actively traded Pygame's hardware-accelerated shape rendering (`pygame.draw`) for custom software-rendering loops (`MLXUtils`) to strictly comply with the MLX requirement. While this introduces a CPU bottleneck, it guarantees algorithmic authenticity. 
+=======
+* **Trade-offs:** We actively traded Pygame's hardware-accelerated shape rendering (`pygame.draw`) for custom software-rendering loops (`MLXUtils`) to strictly comply with the MLX requirement. While this introduces a CPU bottleneck, it guarantees algorithmic authenticity.
+>>>>>>> origin/MLX-Backend
 
 **Fixed Timestep & Collision Consistency:**
 The CPU-heavy pixel-by-pixel rendering inherently introduces artificial frame lag. Using a standard frame-independent `delta_time` caused high-speed entities to teleport across multiple tiles in a single frame, phasing through pacgums and missing collisions. To guarantee exact logic execution at any dynamic speed (from 0 to 10 in evaluation mode), the engine implements a **Fixed Timestep with an Accumulator**. This architecture completely decouples the physical rendering loop from the backend physics loop. It accumulates real-world frame lag and processes the game logic in strict 0.016-second micro-steps before drawing to the screen. This ensures 100% collision accuracy and consistent rendering behavior.
 
 **MLX Library Compliance:**
+<<<<<<< HEAD
 The project was explicitly designed to comply with the constraint that *any graphical library function used must have a direct equivalent in the MiniLibX (MLX) library*. Because Pygame's built-in drawing primitives (like `pygame.draw.rect` or `pygame.draw.circle`) have no equivalent in MLX (which only provides pixel rendering), we implemented a custom `MLXUtils` class. All shapes and image processing were achieved using manual pixel-by-pixel loops.
+=======
+The project was explicitly designed to comply with the constraint that *any graphical library function used must have a direct equivalent in the MiniLibX (MLX) library*. Because Pygame's built-in drawing primitives have no equivalent in MLX (which only provides pixel rendering), we implemented a custom `MLXUtils` class. Furthermore, standard Pygame timing functions (`pygame.time.Clock`, `get_ticks()`) were entirely stripped from the backend and replaced with Python's native `time.perf_counter()` to strictly mirror standard C-library time management.
+>>>>>>> origin/MLX-Backend
 
 | Game Implementation (Python/Pygame) | MLX Equivalent (`mlx.h`) | Description |
 |-------------------------------------|--------------------------|-------------|
 | `Surface.set_at((x, y), color)` inside nested `for` loops (`MLXUtils.draw_rect`, `draw_circle`) | `mlx_pixel_put` | Used to draw rectangles, circles, and borders pixel by pixel. |
 | Bresenham's Line Algorithm via `set_at()` (`MLXUtils.draw_line`) | `mlx_pixel_put` | Replicates line drawing without native vector graphics. |
 | Geometric polygon fill via `set_at()` (`MLXUtils.draw_triangle`) | `mlx_pixel_put` | Replicates triangle drawing pixel by pixel. |
+<<<<<<< HEAD
 | `Surface.get_at((x, y))` / `set_at` looping (`MLXUtils.colorize_icon`) | `mlx_get_data_addr` / memory buffer modification | Replicates pixel-level color blending and alpha manipulation without using `BLEND_RGB_ADD`. |
 | Basic `blit` operations | `mlx_put_image_to_window` | Standard 2D image drawing. |
 
 This strictly manual pixel-manipulation approach guarantees that the implementation is 100% compatible with the MLX standard.
+=======
+| Native Python `time.perf_counter()` | `<sys/time.h>` / `gettimeofday` | Replaces `pygame.time` to ensure time-management relies on standard OS libraries, not the graphical library. |
+| Basic `blit` operations | `mlx_put_image_to_window` | Standard 2D image drawing. |
+>>>>>>> origin/MLX-Backend
 ---
 
 ## General Software Architecture
@@ -168,6 +185,7 @@ The software architecture completely decouples the backend state and logic from 
 
 ## Project Management
 
+<<<<<<< HEAD
 A dedicated directory containing evidence of our project management methodology (including timelines, tracking boards, risk analysis, and team organization) can be found in the [`project_management/`](./project_management/) folder.
 
 We utilized an Agile approach with the extensive application of GitHub features. 
@@ -178,7 +196,29 @@ We utilized an Agile approach with the extensive application of GitHub features.
 * **Task Tracking:** We used GitHub Issues as tickets to track bugs, assign specific feature modules, and monitor progress.
 * **Communication:** GitHub Discussions were leveraged to align on technical decisions alongside our daily coding check-ins.
 * **Timeline:** We allocated exactly 4 weeks to complete the full scope of this project, successfully fulfilling the initial plan.
+=======
+A dedicated directory containing evidence of our project management methodology (including timelines, tracking boards, risk analysis, and team organization) can be found in the [`project_mgt/`](./project_mgt/) folder.
 
+* **01_team_organization.md**: Details the front-end/back-end split between vokatera and dporhomo, and how you communicated (GitHub discussions, daily syncs).
+>>>>>>> origin/MLX-Backend
+
+* **02_timeline_and_progress.md**: A retro-fitted 4-week timeline based on your closed GitHub issues. Week 1: Setup/Makefile. Week 2: Logic/Grid/Maze. Week 3: Front-end rendering/UI. Week 4: Bug fixing/MLX compliance.
+
+* **03_risk_analysis.md**: Highlights the MLX CPU bottleneck risk, the tunneling bug, and the mitigation strategies (MLXUtils + Fixed Timestep).
+
+* **04_blocking_points.md**: Details the realization that pygame.time violated MLX rules and how it was surgically removed and replaced with standard Python time.
+
+* **05_acceptance_test_plan.md**: A checklist of the edge cases you tested (Evaluation mode speeds, JSON config corruption, level scaling).
+
+
+### Overview
+We utilized an Agile approach with the extensive application of GitHub features.
+
+* **Team Organization:** The project was developed by two teammates. `vokatera` developed the front-end architecture and MLX-compliant rendering systems, while `dporhomo` focused on the back-end logic, state machine, physics, and entity AI.
+* **Branching Strategy:** We worked in separate feature branches, predominantly `Front-end-dev` and `Back-end-dev`. We gradually worked in our respective branches and pushed them to Git frequently.
+* **Pull Requests & Code Review:** Stable features were merged into the `main` branch solely through Pull Requests. This allowed us to validate changes, share our work, review progress in incremental steps, and ensure backup points.
+* **Task Tracking:** We used GitHub Issues as tickets to track bugs, assign specific feature modules, and monitor progress across a 4-week lifecycle.
+* **Timeline:** We allocated exactly 4 weeks to complete the full scope of this project. Core features were completed by Day 22, reserving the final 6 days strictly for evaluation prep, bug fixing, and compliance audits.
 
 ---
 
@@ -208,5 +248,6 @@ We utilized an Agile approach with the extensive application of GitHub features.
 
 ### Legal Disclaimer
 
-The audio files and sound archives used in this project were obtained from publicly available sources that distribute archival or reference recordings free of charge. Their use in this project was limited to educational, non-commercial, and demonstrative purposes and was carried out in accordance with applicable copyright law and the terms of the corresponding source platforms. This project does not claim ownership of the original sound recordings; all rights remain with their respective copyright holders. We do not distribute the original audio files as standalone assets and do not use them for commercial gain.
+* **Disclaimer:** The audio files and sound archives used in this project were obtained from publicly available sources that distribute archival or reference recordings free of charge. Their use in this project was limited to educational, non-commercial, and demonstrative purposes and was carried out in accordance with applicable copyright law and the terms of the corresponding source platforms. This project does not claim ownership of the original sound recordings; all rights remain with their respective copyright holders. We do not distribute the original audio files as standalone assets and do not use them for commercial gain.
+
 ---

@@ -506,6 +506,7 @@ class Render:
         if is_eval and cheat_str:
             color = self.ui.C_TEXT_YELLOW
             c_surf = self.ui.font_regular.render(cheat_str, True, color)
+            c_surf = self.ui.font_regular.render(cheat_str, True, color)
             c_rect = c_surf.get_rect(center=(cx, sh - 15))
             self.screen.blit(c_surf, c_rect)
 
@@ -526,6 +527,7 @@ class Render:
         except (FileNotFoundError, pygame.error):
             msg = "VICTORY!" if is_victory else "GAME OVER"
             color = (0, 255, 0) if is_victory else (255, 0, 0)
+            title = self.ui.font_regular.render(msg, True, color)
             title = self.ui.font_regular.render(msg, True, color)
         score_msg = f"FINAL SCORE: {score}"
         color = self.ui.C_TEXT_WHITE
