@@ -550,7 +550,7 @@ if __name__ == "__main__":
 
     # Generate maze first so we know the real grid dimensions
     if not loader.generate(width=15, height=18, seed=42, pacgum_count=42):
-        print("Error: Could not generate maze (mazegenerator missing?). Exiting.")
+        print("Error: Could not generate maze")
         import sys
         sys.exit(1)
     grid = loader.get_grid()
