@@ -31,6 +31,20 @@ class ConfigManager:
         }
         self._config: dict[str, Any] = self._defaults.copy()
 
+    def _catch_duplic_keys(self, ordered_pairs) -> dict:
+        """Catches duplicate keys in config.json"""
+
+        duplicates = {}
+        for key, value in ordered_pairs:
+            if key in duplicates:
+                print(f"Warning: Found duplicate '{key}'. Clamping.")
+                if key in self._defaults:
+                    duplicates[key] = self._defaults[key]
+            else:
+                duplicates[key] = value
+
+        return duplicates
+
     def load(self, filepath: str) -> None:
         """Loads config from json with comment support"""
 
@@ -59,7 +73,11 @@ class ConfigManager:
         # are these lines json format complient
         try:
             content = "".join(raw_lines)
-            data = json.loads(content)
+
+            # Check for duplicate keys
+            # data = json.loads(content)
+            data = json.loads(content, object_pairs_hook=self._catch_duplic_keys)
+
             if not isinstance(data, dict):
                 print("Warning: JSON is not a dictionary.")
                 print("Notice: Proceeding with default settings.")
@@ -185,7 +203,8 @@ class ConfigManager:
 
             # Validating 'width'
             if "width" not in lvl:
-                print(f"Warning: 'width' is missing for Level {i}. Clamping.")
+                print(f"Warning: 'width' is missing for Level {i + 1}. "
+                      "Clamping.")
                 w = 15
             else:
                 w = lvl["width"]
@@ -196,13 +215,14 @@ class ConfigManager:
                     or isinstance(w, bool)
                     or not (15 <= w <= 30)
                 ):
-                    print(f"Incorrect width dimensions for Level {i}. "
+                    print(f"Incorrect width dimensions for Level {i + 1}. "
                           "Clamping.")
                     w = 15
 
             # h !< 15:
             if "height" not in lvl:
-                print(f"Warning: 'height' is missing for Level {i}. Clamping.")
+                print(f"Warning: 'height' is missing for Level {i + 1}. "
+                      "Clamping.")
                 h = 15
             else:
                 h = lvl["height"]
@@ -211,7 +231,7 @@ class ConfigManager:
                     or isinstance(h, bool)
                     or not (15 <= h <= 30)
                 ):
-                    print(f"Incorrect height dimensions for Level {i}. "
+                    print(f"Incorrect height dimensions for Level {i + 1}. "
                           "Clamping.")
                     h = 15
 
