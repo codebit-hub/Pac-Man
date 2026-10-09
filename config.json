@@ -16,20 +16,18 @@
     // Ghost behaviour randomization: spawning and color.
     # Any message: l;kasd4039(*&*(^^*&%*%^*%(**(
 
-    "game_mode": "evaluation",
+    "game_mode": "game",
     "highscore_filename": "highscore.json",
-    "levels": 3,
+    "levels": 10,
     "level": [
-        {"width": 15, "height": 15},
-        {"width": 16, "height": 16},
-        {"width": 17, "height": 17}
+        {"width": 15, "height": 15}
     ],
     "lives": 3,
-    "pacgum": 1,
+    "pacgum": 42,
     "points_per_pacgum": 10,
     "points_per_super_pacgum": 50,
     "points_per_ghost": 200,
     "seed": 42,
-    "level_max_time": 30,
+    "level_max_time": 90,
     "ghost_behavior_random": false
 }

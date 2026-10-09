@@ -25,7 +25,7 @@ class UIConfig:
         self.GAME_PATH = (20, 20, 40)
 
         # Font
-        self.font_regular = pygame.font.SysFont(None, 13)
+        self.font_regular = pygame.font.SysFont(None, 20)
 
     def draw_panel_bg(self, screen: pygame.Surface,
                       cx: int, cy: int) -> pygame.Rect:

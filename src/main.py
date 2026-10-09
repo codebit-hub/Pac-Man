@@ -328,8 +328,10 @@ class Application:
                     self.player.set_direction(Direction.LEFT)
                 elif ev.key in (pygame.K_d, pygame.K_RIGHT):
                     self.player.set_direction(Direction.RIGHT)
+                elif ev.key == pygame.K_m:
+                    self.audio.toggle_mute()
                 elif ev.key in (
-                    pygame.K_p, pygame.K_SPACE, pygame.K_BACKSPACE):
+                    pygame.K_p, pygame.K_SPACE, pygame.K_BACKSPACE, pygame.K_ESCAPE):
                     self.app_state = "PAUSE"
                     self.pause_selected = 0
                     self.intro_timer = 0.0

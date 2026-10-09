@@ -55,7 +55,7 @@ class PauseMenu:
                         self.selected_item = separator_idx + 1
                 elif ev.key == pygame.K_m:
                     app.audio.toggle_mute()
-                elif ev.key == pygame.K_SPACE:
+                elif ev.key in (pygame.K_SPACE, pygame.K_ESCAPE):
                     app.app_state = "PLAYING"
                     app.audio.stop_bgm()
                 elif ev.key in (pygame.K_RETURN, pygame.K_p):
