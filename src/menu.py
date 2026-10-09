@@ -2,16 +2,20 @@ import pygame
 import sys
 import os
 import time
+from typing import Optional, Any
 
 from renderer import Render, MLXUtils
 from ui_config import UIConfig
 
 
 class Menu:
+    """Manages the main menu screens, submenus, and start-up animations."""
+
     def __init__(self, screen: pygame.Surface,
                  pacgums_power: int = 10,
                  super_pacgums_power: int = 50,
                  pacgums_nb: int = 4) -> None:
+        """Initialize the menu with rendering surfaces"""
 
         # 1. Basic variables and configuration
         self.screen = screen
@@ -37,8 +41,8 @@ class Menu:
 
         # Base dir for assets
         base_dir = getattr(
-            sys, '_MEIPASS', os.path.join(os.path.dirname(__file__), "..")
-            )
+            sys, '_MEIPASS', os.path.join(
+                os.path.dirname(__file__), ".."))
         assets = os.path.normpath(os.path.join(base_dir, "assets"))
 
         # -- Loading of files --
@@ -57,19 +61,22 @@ class Menu:
         except pygame.error:
             pass
 
-    def draw_main_menu(self, top_scores: list = None, audio=None) -> None:
+    def draw_main_menu(self, top_scores: Optional[list] = None,
+                       audio: Optional[Any] = None) -> None:
+        """Draws the main menu with high scores and settings"""
         self.screen.fill((0, 0, 0))
 
-        # Helper function for getting assets (used by both states)
-        def get_sp(x: int, y: int):
+        # Helper functions for spitesheets
+        def get_sp(x: int, y: int) -> pygame.Surface:
+            """Extracts and scales a specific sprite for the menu animation."""
             surf = self.renderer.get_sprite(x, y)
             if surf:
                 scaled = MLXUtils.scale_image(surf, 28, 28)
                 scaled.set_colorkey((255, 0, 255))
-                return scaled
+                return scaled  # type: ignore[no-any-return]
             return pygame.Surface((28, 28))
 
-        # Populate animation frames if empty (using spritesheet)
+        # Animation of pacman in menu
         if not self.pacman_frames:
             self.pacman_frames = [
                 get_sp(0, 0),  # open mouth left
@@ -77,7 +84,7 @@ class Menu:
                 get_sp(8, 0)   # closed mouth
             ]
 
-        # Animation logic (used by main state)
+        # Animation logic
         current_time = int(time.perf_counter() * 1000)
         if current_time - self.last_anim_time >= 100:
             self.last_anim_time = current_time
@@ -98,17 +105,18 @@ class Menu:
             try:
                 img = pygame.image.load("./assets/menu-nav/pac-man-logo.png")
                 self.screen.blit(img, img.get_rect(center=(cx, cy - 200)))
-            except (FileNotFoundError, pygame.error) as err:
-                print("Couldn't load PACMAN title in menu, loading default text..")
-                title = self.ui.font_regular.render("Pac-Man", True, (253, 255, 0))
-                self.screen.blit(title, title.get_rect(center=(cx - 5, cy - 200)))
+            except (FileNotFoundError, pygame.error):
+                print("Couldn't load PACMAN title, loading default text..")
+                c = self.ui.C_TEXT_YELLOW
+                title = self.ui.font_regular.render("Pac-Man", True, c)
+                rect = title.get_rect(center=(cx - 5, cy - 200))
+                self.screen.blit(title, rect)
 
             try:
-                push_img = pygame.image.load("./assets/menu-nav/push-space.png")
-                self.screen.blit(push_img, push_img.get_rect(center=(cx - 5, cy - 100)))
+                img = pygame.image.load("./assets/menu-nav/push-space.png")
+                self.screen.blit(img, img.get_rect(center=(cx - 5, cy - 100)))
             except (FileNotFoundError, pygame.error):
                 pass
-
 
             # 2. Draw Menu Items & Pointer
             self._menu_rects = []
@@ -124,8 +132,9 @@ class Menu:
                     surf = pygame.image.load(f"./assets/menu-nav/{img_name}")
                 except (FileNotFoundError, pygame.error):
                     labels = ["View Highscores", "Instructions", "Exit"]
-                    color = self.ui.C_TEXT_PURPLE if i == self.selected_item else self.ui.C_TEXT_WHITE
-                    surf = self.ui.font_regular.render(labels[i], True, color)
+                    c = (self.ui.C_TEXT_PURPLE if i == self.selected_item
+                         else self.ui.C_TEXT_WHITE)
+                    surf = self.ui.font_regular.render(labels[i], True, c)
 
                 rect = surf.get_rect(center=(cx, cy - 35 + (i * 50)))
                 self._menu_rects.append(rect)
@@ -134,15 +143,23 @@ class Menu:
             # 3. Draw Top 4 Highscores
             if top_scores:
                 try:
-                    top_scores_img = pygame.image.load("./assets/menu-nav/highscores.png")
-                    self.screen.blit(top_scores_img, top_scores_img.get_rect(center=(cx, cy + 120)))
+                    img_path = "./assets/menu-nav/highscores.png"
+                    top_scores_img = pygame.image.load(img_path)
+                    rect = top_scores_img.get_rect(center=(cx, cy + 120))
+                    self.screen.blit(top_scores_img, rect)
                 except (FileNotFoundError, pygame.error):
-                    hs_title = self.ui.font_regular.render("TOP SCORES", True, (253, 255, 0))
-                    self.screen.blit(hs_title, hs_title.get_rect(center=(cx, cy + 120)))
+                    c = (253, 255, 0)
+                    hs_title = self.ui.font_regular.render(
+                        "TOP SCORES", True, c)
+                    rect = hs_title.get_rect(center=(cx, cy + 120))
+                    self.screen.blit(hs_title, rect)
                 for idx, hs in enumerate(top_scores):
                     text = f"{idx + 1}. {hs['name']} - {hs['score']} pts"
-                    surf = self.ui.font_regular.render(text, True, (255, 255, 255))
-                    self.screen.blit(surf, surf.get_rect(center=(cx + 10, cy + 155 + (idx * 25))))
+                    surf = self.ui.font_regular.render(
+                        text, True, (255, 255, 255))
+                    y = cy + 155 + (idx * 25)
+                    rect = surf.get_rect(center=(cx + 10, y))
+                    self.screen.blit(surf, rect)
 
             # 4. Draw Animation
             start_x = cx - 90
@@ -154,7 +171,8 @@ class Menu:
                 self.anime_x = start_x
 
             # Draw only once per frame at the current position
-            MLXUtils.draw_circle(self.screen, (255,255,255), (int(self.anime_x), int(y_pos + 15)), 5)
+            c_pos = (self.anime_x, y_pos + 15)
+            MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, c_pos, 5)
             self.screen.blit(pacman, (self.anime_x + 36, y_pos))
             self.screen.blit(clyde, (self.anime_x + 76, y_pos))
             self.screen.blit(blinky, (self.anime_x + 108, y_pos))
@@ -169,17 +187,18 @@ class Menu:
         elif self.state == "instructions":
             cx = self.screen.get_width() // 2
             cy = self.screen.get_height() // 2
+            white = self.ui.C_TEXT_WHITE
 
             # --- Panel ---
             bg_rect = self.ui.draw_panel_bg(self.screen, cx, cy)
 
-            ins_title = self.ui.font_regular.render("INTRUCTIONS", True, self.ui.C_TEXT_WHITE)
+            ins_title = self.ui.font_regular.render("INTRUCTIONS", True, white)
             blink_ghost_white = get_sp(10, 4)
-            pacman_txt = self.ui.font_regular.render("AVOIDS", True, self.ui.C_TEXT_WHITE)
-            self.screen.blit(ins_title, ins_title.get_rect(center=(cx, bg_rect.top + 20)))
+            pacman_txt = self.ui.font_regular.render("AVOIDS", True, white)
+            rect = ins_title.get_rect(center=(cx, bg_rect.top + 20))
+            self.screen.blit(ins_title, rect)
 
             self._close_rect = self.ui.draw_close_button(self.screen, bg_rect)
-
 
             y_pos = bg_rect.top + 70
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
@@ -188,70 +207,95 @@ class Menu:
             self.screen.blit(pacman, pacman_rect)
 
             # Vertically center the AVOIDS text to pacman
-            txt_rect = pacman_txt.get_rect(left=bg_rect.left + 70, centery=pacman_rect.centery)
-            self.screen.blit(pacman_txt, txt_rect)
+            centery = pacman_rect.centery
+            rect = pacman_txt.get_rect(left=bg_rect.left + 70, centery=centery)
+            self.screen.blit(pacman_txt, rect)
 
-            ghost_x = txt_rect.right + 10
+            ghost_x = rect.right + 10
             # Also vertically center the ghosts to pacman
-            self.screen.blit(blinky, blinky.get_rect(left=ghost_x, centery=pacman_rect.centery))
-            self.screen.blit(pinky, pinky.get_rect(left=ghost_x + 30, centery=pacman_rect.centery))
-            self.screen.blit(inky, inky.get_rect(left=ghost_x + 60, centery=pacman_rect.centery))
-            self.screen.blit(clyde, clyde.get_rect(left=ghost_x + 90, centery=pacman_rect.centery))
+            rect = blinky.get_rect(left=ghost_x, centery=centery)
+            self.screen.blit(blinky, rect)
+            rect = pinky.get_rect(left=ghost_x + 30, centery=centery)
+            self.screen.blit(pinky, rect)
+            rect = inky.get_rect(left=ghost_x + 60, centery=centery)
+            self.screen.blit(inky, rect)
+            rect = clyde.get_rect(left=ghost_x + 90, centery=centery)
+            self.screen.blit(clyde, rect)
 
             y_pos = bg_rect.top + 120
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            dots_txt = self.ui.font_regular.render(f"PACGUMS SCORE {self.pacgums_power} POINTS", True, self.ui.C_TEXT_WHITE)
-            MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 35), int(y_pos + 15)), 5)
-            MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 50), int(y_pos + 15)), 5)
-            MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 65), int(y_pos + 15)), 5)
-            self.screen.blit(dots_txt, dots_txt.get_rect(topleft=(bg_rect.left + 85, y_pos + 5)))
+            txt = f"PACGUMS SCORE {self.pacgums_power} POINTS"
+            dots_txt = self.ui.font_regular.render(txt, True, white)
+            y_c = y_pos + 15
+            screen = self.screen
+            MLXUtils.draw_circle(screen, white, (bg_rect.left + 35, y_c), 5)
+            MLXUtils.draw_circle(screen, white, (bg_rect.left + 50, y_c), 5)
+            MLXUtils.draw_circle(screen, white, (bg_rect.left + 65, y_c), 5)
+            rect = dots_txt.get_rect(topleft=(bg_rect.left + 85, y_pos + 5))
+            self.screen.blit(dots_txt, rect)
 
             y_pos = bg_rect.top + 170
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            pacgums_nb_txt = self.ui.font_regular.render(f"{self.pacgums_nb}", True, self.ui.C_TEXT_WHITE)
-            pacgums_power_txt = self.ui.font_regular.render(f"FLASHING SUPER PACGUMS SCORE {self.super_pacgums_power} POINTS", True, self.ui.C_TEXT_WHITE)
-            self.screen.blit(pacgums_nb_txt, pacgums_nb_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10)))
-            MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (int(bg_rect.left + 65), int(y_pos + 12)), 10)
-            self.screen.blit(pacgums_power_txt, pacgums_power_txt.get_rect(topleft=(bg_rect.left + 90, y_pos + 10)))
+            nb_txt = self.ui.font_regular.render(
+                f"{self.pacgums_nb}", True, white)
+            pt_txt = "FLASHING SUPER PACGUMS SCORE "
+            f"{self.super_pacgums_power} POINTS"
+            pwr_txt = self.ui.font_regular.render(pt_txt, True, white)
+            rect = nb_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10))
+            self.screen.blit(nb_txt, rect)
+            c_pos = (bg_rect.left + 65, y_pos + 12)
+            MLXUtils.draw_circle(self.screen, white, c_pos, 10)
+            rect = pwr_txt.get_rect(topleft=(bg_rect.left + 90, y_pos + 10))
+            self.screen.blit(pwr_txt, rect)
 
             y_pos = bg_rect.top + 220
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
 
-            energezing_pc_txt = self.ui.font_regular.render("AFTER POWER UP", True, self.ui.C_TEXT_WHITE)
-            pc_rect = energezing_pc_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10))
+            energezing_pc_txt = self.ui.font_regular.render(
+                "AFTER POWER UP", True, white)
+            pc_rect = energezing_pc_txt.get_rect(
+                topleft=(bg_rect.left + 30, y_pos + 10))
             self.screen.blit(energezing_pc_txt, pc_rect)
 
-            pacman_rect = pacman.get_rect(left=pc_rect.right + 10, centery=pc_rect.centery)
+            pacman_rect = pacman.get_rect(
+                left=pc_rect.right + 10, centery=pc_rect.centery)
             self.screen.blit(pacman, pacman_rect)
 
-            energezing_ghost_txt = self.ui.font_regular.render("CAN EAT", True, self.ui.C_TEXT_WHITE)
-            ghost_txt_rect = energezing_ghost_txt.get_rect(left=pacman_rect.right + 10, centery=pc_rect.centery)
+            energezing_ghost_txt = self.ui.font_regular.render(
+                "CAN EAT", True, white)
+            ghost_txt_rect = energezing_ghost_txt.get_rect(
+                left=pacman_rect.right + 10, centery=pc_rect.centery)
             self.screen.blit(energezing_ghost_txt, ghost_txt_rect)
 
-            blink_rect = blink_ghost_white.get_rect(left=ghost_txt_rect.right + 10, centery=pc_rect.centery)
+            blink_rect = blink_ghost_white.get_rect(
+                left=ghost_txt_rect.right + 10, centery=pc_rect.centery)
             self.screen.blit(blink_ghost_white, blink_rect)
 
             y_pos = bg_rect.top + 270
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            controls_txt = self.ui.font_regular.render("CONTROLS: [W][A][S][D] OR ARROWS TO MOVE", True, self.ui.C_TEXT_WHITE)
-            self.screen.blit(controls_txt, controls_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10)))
+            controls_txt = self.ui.font_regular.render(
+                "CONTROLS: [W][A][S][D] OR ARROWS TO MOVE", True, white)
+            rect = controls_txt.get_rect(
+                topleft=(bg_rect.left + 30, y_pos + 10))
+            self.screen.blit(controls_txt, rect)
 
             # Added Pause Instructions
             y_pos = bg_rect.top + 310
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
-            pause_txt = self.ui.font_regular.render("PAUSE: PRESS [P] OR [SPACE]", True, self.ui.C_TEXT_WHITE)
-            self.screen.blit(pause_txt, pause_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10)))
+            pause_txt = self.ui.font_regular.render(
+                "PAUSE: PRESS [P] OR [SPACE]", True, white)
+            rect = pause_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10))
+            self.screen.blit(pause_txt, rect)
 
             # Pulsing ESC hint
             try:
                 ret_img = pygame.image.load("./assets/return-instuctions.png")
-                self.screen.blit(ret_img, ret_img.get_rect(center=(cx, bg_rect.bottom + 50)))
+                rect = ret_img.get_rect(center=(cx, bg_rect.bottom + 50))
+                self.screen.blit(ret_img, rect)
             except (FileNotFoundError, pygame.error):
                 pass
 
-
-
-    def _draw_mute_icon(self, audio=None) -> None:
+    def _draw_mute_icon(self, audio: Optional[Any] = None) -> None:
         """Draw volume-mute icon in top-right corner; red tint when muted."""
         if self._mute_icon is None:
             return
@@ -264,16 +308,14 @@ class Menu:
         is_muted = audio.muted if audio else False
 
         if is_muted:
-            # Apply red tint manually
             icon = MLXUtils.colorize_icon(self._mute_icon, 220, 50, 50)
             self.screen.blit(icon, (x, y))
-            # Draw a diagonal strike-through line
         else:
-            # Apply white tint manually
             icon = MLXUtils.colorize_icon(self._mute_icon, 255, 255, 255)
             self.screen.blit(icon, (x, y))
 
-    def handle_event(self, event: pygame.event.Event, audio=None) -> None:
+    def handle_event(self, event: pygame.event.Event,
+                     audio: Optional[Any] = None) -> None:
         """Handle keyboard and mouse input for menu navigation."""
         NUM_ITEMS = 3
 
@@ -285,7 +327,7 @@ class Menu:
                     self.selected_item = (self.selected_item - 1) % NUM_ITEMS
                 elif event.key == pygame.K_m and audio:
                     audio.toggle_mute()
-                elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+                elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     self._activate_item(self.selected_item + 1)
                 elif event.key == pygame.K_SPACE:
                     self._activate_item(0)
@@ -301,8 +343,8 @@ class Menu:
                         self.selected_item = i
                         break
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # Check mute icon click
-                if self._mute_rect and self._mute_rect.collidepoint(event.pos) and audio:
+                if (self._mute_rect
+                        and self._mute_rect.collidepoint(event.pos) and audio):
                     audio.toggle_mute()
                     return
                 for i, rect in enumerate(self._menu_rects):
@@ -312,10 +354,11 @@ class Menu:
 
         elif self.state == "instructions":
             if event.type == pygame.KEYDOWN and event.key in (
-                pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
+                    pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_KP_ENTER):
                 self.state = "main"
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if hasattr(self, "_close_rect") and self._close_rect.collidepoint(event.pos):
+                if (hasattr(self, "_close_rect")
+                        and self._close_rect.collidepoint(event.pos)):
                     self.state = "main"
                 else:
                     self.state = "main"
