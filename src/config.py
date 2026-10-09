@@ -190,11 +190,11 @@ class ConfigManager:
             else:
                 w = lvl["width"]
                 # Ensuring dimensions are integers and correctly sized
-                # not (17 <= w <= 35):
+                # not (17 <= w <= 30):
                 if (
                     not isinstance(w, int)
                     or isinstance(w, bool)
-                    or not (15 <= w <= 35)
+                    or not (15 <= w <= 30)
                 ):
                     print(f"Incorrect width dimensions for Level {i}. "
                           "Clamping.")
@@ -209,7 +209,7 @@ class ConfigManager:
                 if (
                     not isinstance(h, int)
                     or isinstance(h, bool)
-                    or not (15 <= h <= 35)
+                    or not (15 <= h <= 30)
                 ):
                     print(f"Incorrect height dimensions for Level {i}. "
                           "Clamping.")

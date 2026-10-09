@@ -61,8 +61,8 @@ class Ghost:
         self.respawn_timer = self.respawn_delay
 
         # Move the ghost off the grid
-        self.grid_x = -1
-        self.grid_y = -1
+        self.grid_x = -100
+        self.grid_y = -100
 
     def get_target_tile(
         self,

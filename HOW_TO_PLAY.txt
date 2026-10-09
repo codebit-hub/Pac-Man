@@ -1,0 +1,21 @@
+=======================================
+          PAC-MAN INSTRUCTIONS
+=======================================
+
+HOW TO RUN THE GAME:
+Open your terminal in this directory and run:
+./pac-man config.json
+
+CONTROLS:
+- W, A, S, D or Arrow Keys : Move Pac-Man
+- ESC / P / Space : Pause the game
+- M : Mute/Unmute audio
+
+CONFIGURATION (config.json):
+You can edit the 'config.json' file to modify game settings:
+- "lives": Number of lives you start with.
+- "level_max_time": Time limit per level in seconds.
+- "seed": The seed for the first level maze generation.
+
+EVALUATION CHEATS (in Pause Menu):
+- Toggle Invincibility, Skip levels, freeze ghosts...
