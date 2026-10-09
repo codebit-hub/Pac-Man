@@ -83,24 +83,29 @@ cd pac-man-game
 
 ## Configuration
 
-The game logic relies entirely on a mandatory `config.json` file. The backend parses this securely, preventing silent failures (e.g., catching booleans incorrectly parsed as integers).
-**Key Structure & Default Behaviors:**
+The game logic relies entirely on a mandatory `config.json` file. The backend parses this securely, preventing silent failures by catching errors (e.g., missing files, booleans incorrectly parsed as integers) and safely clamping or reverting to defaults.
 
-* `game_mode`: Accepts `"game"` or `"evaluation"`. Evaluation mode enables in-game cheats via the Pause menu (invincibility, speed tuning, level skipping).
-* `seed`: Integer used to generate Level 1 predictably.
-* `levels`: Total number of levels before triggering the Victory state.
-* `level`: Array containing objects with `"width"` and `"height"`. The backend calculates dynamic ghost speed scaling from `1.0` to `5.2` across these levels.
-* `ghost_behavior_random`: Boolean. If true, dynamically shuffles ghost spawn corners and visual colors upon initialization.
-* `highscore_filename`: Standardized path for persistent JSON saving.
+**Key Structure & Default Behaviors:**
+* `game_mode` (default: `"game"`): Accepts `"game"` or `"evaluation"`. Evaluation mode enables in-game cheats via the Pause menu (invincibility, speed tuning, level skipping).
+* `highscore_filename` (default: `"highscore.json"`): Standardized path for persistent JSON saving.
+* `levels` (default: `12`): Total number of levels before triggering the Victory state.
+* `level` (default: `[{"width": 15, "height": 15}]`): Array defining the grid size of the levels.
+* `lives` (default: `3`): Number of lives the player starts with.
+* `pacgum` (default: `42`): Seed/Configuration for pacgum distribution.
+* `points_per_pacgum` (default: `10`), `points_per_super_pacgum` (default: `50`), `points_per_ghost` (default: `200`): Scoring values for various entities.
+* `seed` (default: `42`): Integer used to generate Level 1 predictably.
+* `level_max_time` (default: `90`): Time limit per level in seconds.
+* `ghost_behavior_random` (default: `false`): If true, dynamically shuffles ghost spawn corners and visual colors upon initialization.
 
 ---
 
 ## Highscore
 
-The project utilizes a persistent Highscore system managed by the `HighScoreManager` class, tracking the Top 10 players.
+The project utilizes a persistent Highscore system managed by the `HighScoreManager` class, tracking the Top 10 players locally.
 
-* **Implementation Choice:** It relies on an external `.json` file. JSON was chosen because it natively serializes Python dictionaries, removing the need for a heavy external database library while keeping the save file human-readable.
-* **Robustness:** The backend aggressively validates the data. If the JSON is manually corrupted, missing, or injected with negative scores/invalid types, the system safely catches the `JSONDecodeError` or `OSError` and falls back to an empty list rather than crashing. Player names are sanitized via Regex to enforce alphanumeric characters and a 10-character limit.
+* **Implementation Choice:** It relies on an external `highscore.json` file. JSON was chosen because it natively serializes Python dictionaries, removing the need for a heavy external database library while keeping the save file human-readable.
+* **Robustness & Accuracy:** The backend aggressively validates the data. If the JSON is manually corrupted, missing, or injected with negative scores/invalid types, the system safely catches the `JSONDecodeError` or `OSError` and falls back to an empty leaderboard rather than crashing.
+* **Player Names:** Names are sanitized via Regex to enforce alphanumeric characters and spaces only, explicitly clamping the length to a maximum of 10 characters. Empty inputs default to `"ANONYMOUS"`.
 
 ---
 
@@ -119,46 +124,69 @@ Mazes are generated dynamically using the `A-Maze-ing` package, orchestrated by 
 
 The backend is built around a central `Application` orchestrator that acts as a finite state machine (`MENU`, `PLAYING`, `PAUSE`, `NAME_INPUT`, `HIGHSCORES`).
 
-**Technical Trade-offs & Features:**
+**Front-End Features & Trade-Offs:**
+* **Retro UI & Animations:** The front-end renders a fully responsive grid matching the configuration file. It features animated menus, animated entity sprites using a spritesheet, and a persistent bottom HUD (Score, Lives, Level, Timer).
+* **Trade-offs:** We actively traded Pygame's hardware-accelerated shape rendering (`pygame.draw`) for custom software-rendering loops (`MLXUtils`) to strictly comply with the MLX requirement. While this introduces a CPU bottleneck, it guarantees algorithmic authenticity. 
 
-* **MLX Compliance & Rendering:**
+**Fixed Timestep & Collision Consistency:**
+The CPU-heavy pixel-by-pixel rendering inherently introduces artificial frame lag. Using a standard frame-independent `delta_time` caused high-speed entities to teleport across multiple tiles in a single frame, phasing through pacgums and missing collisions. To guarantee exact logic execution at any dynamic speed (from 0 to 10 in evaluation mode), the engine implements a **Fixed Timestep with an Accumulator**. This architecture completely decouples the physical rendering loop from the backend physics loop. It accumulates real-world frame lag and processes the game logic in strict 0.016-second micro-steps before drawing to the screen. This ensures 100% collision accuracy and consistent rendering behavior.
 
-To adhere to the strict constraints of the 42 MLX graphics library, standard Pygame shape-drawing methods were entirely replaced with a custom `MLXUtils` wrapper. This module simulates `mlx_pixel_put` by executing pixel-by-pixel geometric math (e.g., Bresenham's algorithm) to render the game grid. Pygame's native text and surface blitting were retained strictly for UI legibility, representing a practical compromise between architectural compliance and runtime performance.
+**MLX Library Compliance:**
+The project was explicitly designed to comply with the constraint that *any graphical library function used must have a direct equivalent in the MiniLibX (MLX) library*. Because Pygame's built-in drawing primitives (like `pygame.draw.rect` or `pygame.draw.circle`) have no equivalent in MLX (which only provides pixel rendering), we implemented a custom `MLXUtils` class. All shapes and image processing were achieved using manual pixel-by-pixel loops.
 
-* **Fixed Timestep & Collision Consistency:**
+| Game Implementation (Python/Pygame) | MLX Equivalent (`mlx.h`) | Description |
+|-------------------------------------|--------------------------|-------------|
+| `Surface.set_at((x, y), color)` inside nested `for` loops (`MLXUtils.draw_rect`, `draw_circle`) | `mlx_pixel_put` | Used to draw rectangles, circles, and borders pixel by pixel. |
+| Bresenham's Line Algorithm via `set_at()` (`MLXUtils.draw_line`) | `mlx_pixel_put` | Replicates line drawing without native vector graphics. |
+| Geometric polygon fill via `set_at()` (`MLXUtils.draw_triangle`) | `mlx_pixel_put` | Replicates triangle drawing pixel by pixel. |
+| `Surface.get_at((x, y))` / `set_at` looping (`MLXUtils.colorize_icon`) | `mlx_get_data_addr` / memory buffer modification | Replicates pixel-level color blending and alpha manipulation without using `BLEND_RGB_ADD`. |
+| Basic `blit` operations | `mlx_put_image_to_window` | Standard 2D image drawing. |
 
-The CPU-heavy pixel-by-pixel rendering inherently introduces artificial frame lag. Using a standard frame-independent `delta_time` caused high-speed entities to teleport across multiple tiles in a single frame, phasing through pacgums and missing collisions. To guarantee exact logic execution at any dynamic speed (from 0 to 10 in evaluation mode), the engine implements a **Fixed Timestep with an Accumulator**. This architecture completely decouples the physical rendering loop from the backend physics loop. It accumulates real-world frame lag and processes the game logic in strict 0.016-second micro-steps before drawing to the screen. This ensures 100% collision accuracy and consistent rendering behavior, completely neutralizing the visual bottleneck.
-* **Decoupled State:** The backend logic (`GameState`) handles all timers (e.g., Flee mode, Scatter/Chase wave switching) and score aggregation completely independently of the front-end graphics.
-* **Safe Instantiation:** To prevent hardware-level crashes during level reloads (e.g., catching `ZeroDivisionError` when evaluation speeds are aggressively scaled to 0.0), the engine securely calculates and overrides entity attributes *after* class initialization.
+This strictly manual pixel-manipulation approach guarantees that the implementation is 100% compatible with the MLX standard.
 ---
 
 ## General Software Architecture
 
-* **`pac-man.py`**: The safe CLI entry point that intercepts tracebacks.
-* **`main.py` (`Application`)**: The central hub that routes inputs, handles state transitions, and manages the Pygame event loop.
-* **`config.py` / `highscore.py**`: Independent modules dedicated strictly to data serialization and validation.
-* **`game_state.py`**: The logical referee tracking lives, points, wave modes, and checking victory conditions.
-* **`player.py` / `ghost.py**`: OOP representation of entities containing internal pathfinding checks, direction queues, and speed math.
-* **`maze_loader.py`**: An abstraction layer specifically for interacting with the external `A-Maze-ing` package.
-* *[Front-end] `menu.py` / `renderer.py`: Handles all Pygame surface drawing, alpha-transparency overlays, dynamic scaling math, and spritesheet extraction.*
+The software architecture completely decouples the backend state and logic from the front-end rendering module.
+
+* **`pac-man.py`**: The safe CLI entry point that intercepts tracebacks and handles execution arguments.
+* **`src/main.py` (`Application`)**: The central hub that routes inputs, handles state transitions, runs the fixed-timestep physics accumulator, and manages the Pygame event loop.
+* **`src/config.py`**: Independent module dedicated strictly to loading, validating, and applying `config.json` rules safely.
+* **`src/highscore.py`**: Independent module responsible for safely parsing, sanitizing, sorting, and saving data to `highscore.json`.
+* **`src/game_state.py`**: The logical referee tracking lives, points, level transitions, timers (e.g., Flee mode, Scatter/Chase wave switching), and checking victory/loss conditions.
+* **`src/player.py`**: OOP representation of Pac-Man, tracking input direction queues, movement logic, and exact sub-tile position.
+* **`src/ghost.py`**: OOP representation of ghosts containing distinct behaviors (Scatter, Chase, Flee, Eaten), internal pathfinding, and dynamic speed math.
+* **`src/maze_loader.py`**: An abstraction layer specifically for importing and interacting with the external `A-Maze-ing` package to generate grid maps.
+* **`src/renderer.py` (`Render` / `MLXUtils`)**: The core front-end module. Handles all Pygame surface drawing, spritesheet extraction, and contains the `MLXUtils` class which executes MLX-compliant pixel-by-pixel rendering math.
+* **`src/menu.py`**: Manages the Main Menu state, including retro animations, title screens, and instruction overlays.
+* **`src/pause_menu.py`**: Handles the Pause overlay and the robust Evaluation/Cheat mode interface.
+* **`src/highscore_screen.py`**: Manages the Game Over / Victory screens, rendering the leaderboard and handling interactive user text input.
+* **`src/ui_config.py`**: Defines reusable front-end design tokens (fonts, colors, standardized panel backgrounds).
+* **`src/audio.py`**: Handles sound loading, volume configuration, BGM toggles, and sound-effect playback.
 
 ---
 
 ## Project Management
 
-We utilized an Agile Git workflow strictly managed through GitHub to ensure continuous integration and stable builds.
+A dedicated directory containing evidence of our project management methodology (including timelines, tracking boards, risk analysis, and team organization) can be found in the [`project_management/`](./project_management/) folder.
 
-* **Branching Strategy:** Work was divided into `Front_end_dev` and `Back_end_dev` branches. Team members pushed small, functional commits frequently.
-* **Pull Requests:** Stable features were merged back into the `main` branch solely through Pull Requests to prevent regressions.
-* **Task Tracking:** GitHub Issues were used as tickets to assign specific feature modules or bug fixes (e.g., fixing Pygame window shrinking).
-* **Communication:** GitHub Discussions were leveraged alongside daily coding check-ins.
+We utilized an Agile approach with the extensive application of GitHub features. 
+
+* **Team Organization:** The project was developed by two teammates. `vokatera` developed the front-end architecture and rendering systems, while `dporhomo` focused on the back-end logic, state machine, and entity AI.
+* **Branching Strategy:** We worked in separate feature branches, predominantly `Front-end-dev` and `Back-end-dev`. We gradually worked in our respective branches and pushed them to Git frequently.
+* **Pull Requests & Code Review:** Stable features were merged into the `main` branch solely through Pull Requests. This allowed us to validate changes, share our work, review progress in incremental steps, and ensure backup points.
+* **Task Tracking:** We used GitHub Issues as tickets to track bugs, assign specific feature modules, and monitor progress.
+* **Communication:** GitHub Discussions were leveraged to align on technical decisions alongside our daily coding check-ins.
+* **Timeline:** We allocated exactly 4 weeks to complete the full scope of this project, successfully fulfilling the initial plan.
 
 
 ---
 
 ## Resources
 
-## Resources
+### Core Technologies
+* [MiniLibX (MLX)](https://github.com/42Paris/minilibx-linux) - A simple X-Window (X11) programming API provided by 42, used by students to render graphics pixel by pixel. Its strict limitations (drawing only via `mlx_pixel_put` and images) heavily influenced this project's custom `MLXUtils` software-rendering constraints.
+
 ### General and Algorithmic Research
 * [The Pac-Man Dossier](https://pacman.holenet.info/) - A foundational reference for understanding the original Pac-Man ruleset, ghost targeting behavior, maze logic, and the classic Scatter, Chase, and Frightened modes. It was especially useful for validating the game’s AI decisions against the canonical arcade model.
 * [Pac-Man Ghost AI Explained](https://www.youtube.com/watch?v=ataGotQ7ir8) - A practical video breakdown of the ghost AI system, helping clarify how each ghost uses different target vectors and behavior phases to create the classic arcade pacing and difficulty curve.
