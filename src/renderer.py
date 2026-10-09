@@ -2,7 +2,7 @@ import pygame
 import os
 import math
 import time
-from typing import Optional, cast
+from typing import Optional
 
 from maze_loader import MazeLoader
 from player import Player, Direction
@@ -17,7 +17,7 @@ class MLXUtils:
             surf: pygame.Surface, new_w: int, new_h: int
     ) -> pygame.Surface:
         """Nearest-neighbor image scale using pixel-level."""
-        
+
         src_w = surf.get_width()
         src_h = surf.get_height()
         if src_w == 0 or src_h == 0 or new_w <= 0 or new_h <= 0:
@@ -39,12 +39,9 @@ class MLXUtils:
         return result
 
     @staticmethod
-    def colorize_icon(surf: pygame.Surface, add_r: int, add_g: int, add_b: int) -> pygame.Surface:
-        """
-        Pixel-by-pixel color tinting.
-        MLX-compliant replacement for pygame.BLEND_RGB_ADD.
-        Equivalent to looping mlx_get_data_addr and manipulating RGB values.
-        """
+    def colorize_icon(surf: pygame.Surface,
+                      add_r: int, add_g: int, add_b: int) -> pygame.Surface:
+        """MLX-compliant colorization by modifying pixel RGB values directly"""
         result = surf.copy()
         for x in range(result.get_width()):
             for y in range(result.get_height()):
@@ -59,35 +56,41 @@ class MLXUtils:
         return result
 
     @staticmethod
-    def draw_rect(surf: pygame.Surface, color: tuple, rect: pygame.Rect, width: int = 0):
+    def draw_rect(surf: pygame.Surface, color: tuple,
+                  rect: pygame.Rect) -> None:
         """MLX-compliant rectangle drawing (pixel by pixel)."""
-        x_start, y_start, w, h = int(rect.x), int(rect.y), int(rect.w), int(rect.h)
-        if width == 0:
-            for y in range(max(0, y_start), min(surf.get_height(), y_start + h)):
-                for x in range(max(0, x_start), min(surf.get_width(), x_start + w)):
-                    surf.set_at((x, y), color)
-        else:
-            MLXUtils.draw_line(surf, color, (x_start, y_start), (x_start + w - 1, y_start), width)
-            MLXUtils.draw_line(surf, color, (x_start, y_start + h - 1), (x_start + w - 1, y_start + h - 1), width)
-            MLXUtils.draw_line(surf, color, (x_start, y_start), (x_start, y_start + h - 1), width)
-            MLXUtils.draw_line(surf, color, (x_start + w - 1, y_start), (x_start + w - 1, y_start + h - 1), width)
+        x_start, y_start, w, h = rect
+        sh, sw = surf.get_height(), surf.get_width()
+
+        y0, y1 = max(0, y_start), min(sh, y_start + h)
+        x0, x1 = max(0, x_start), min(sw, x_start + w)
+
+        for y in range(y0, y1):
+            for x in range(x0, x1):
+                surf.set_at((x, y), color)
 
     @staticmethod
-    def draw_line(surf: pygame.Surface, color: tuple, start: tuple, end: tuple, width: int = 1):
+    def draw_line(surf: pygame.Surface, color: tuple,
+                  start: tuple, end: tuple, width: int = 1) -> None:
         """MLX-compliant line drawing (Bresenham's algorithm)."""
+
         x0, y0 = int(start[0]), int(start[1])
         x1, y1 = int(end[0]), int(end[1])
-        dx = abs(x1 - x0)
-        dy = -abs(y1 - y0)
+        dx, dy = abs(x1 - x0), -abs(y1 - y0)
         sx = 1 if x0 < x1 else -1
         sy = 1 if y0 < y1 else -1
         err = dx + dy
+        w, h = surf.get_width(), surf.get_height()
+        offset = width // 2
+
         while True:
-            for wx in range(width):
-                for wy in range(width):
-                    px, py = x0 + wx, y0 + wy
-                    if 0 <= px < surf.get_width() and 0 <= py < surf.get_height():
-                        surf.set_at((px, py), color)
+            for i in range(-offset, offset + (width % 2)):
+                px = x0 + (i if abs(dy) > dx else 0)
+                py = y0 + (0 if abs(dy) > dx else i)
+
+                if 0 <= px < w and 0 <= py < h:
+                    surf.set_at((px, py), color)
+
             if x0 == x1 and y0 == y1:
                 break
             e2 = 2 * err
@@ -99,29 +102,22 @@ class MLXUtils:
                 y0 += sy
 
     @staticmethod
-    def draw_circle(surf: pygame.Surface, color: tuple, center: tuple, radius: int, width: int = 0):
+    def draw_circle(surf: pygame.Surface, color: tuple,
+                    center: tuple, radius: int) -> None:
         """MLX-compliant circle drawing."""
+        width, height = surf.get_width(), surf.get_height()
         cx, cy = int(center[0]), int(center[1])
         r2 = radius * radius
-        if width == 0:
-            for y in range(-radius, radius + 1):
-                for x in range(-radius, radius + 1):
-                    if x * x + y * y <= r2:
-                        px, py = cx + x, cy + y
-                        if 0 <= px < surf.get_width() and 0 <= py < surf.get_height():
-                            surf.set_at((px, py), color)
-        else:
-            in_r2 = (radius - width) * (radius - width)
-            for y in range(-radius, radius + 1):
-                for x in range(-radius, radius + 1):
-                    d2 = x * x + y * y
-                    if in_r2 <= d2 <= r2:
-                        px, py = cx + x, cy + y
-                        if 0 <= px < surf.get_width() and 0 <= py < surf.get_height():
-                            surf.set_at((px, py), color)
+        for y in range(-radius, radius + 1):
+            for x in range(-radius, radius + 1):
+                if x * x + y * y <= r2:
+                    px, py = cx + x, cy + y
+                    if 0 <= px < width and 0 <= py < height:
+                        surf.set_at((px, py), color)
 
     @staticmethod
-    def draw_triangle(surf: pygame.Surface, color: tuple, p1: tuple, p2: tuple, p3: tuple):
+    def draw_triangle(surf: pygame.Surface, color: tuple,
+                      p1: tuple, p2: tuple, p3: tuple) -> None:
         """MLX-compliant filled triangle drawing."""
         min_x = int(min(p1[0], p2[0], p3[0]))
         max_x = int(max(p1[0], p2[0], p3[0]))
@@ -133,8 +129,10 @@ class MLXUtils:
         max_x = min(surf.get_width() - 1, max_x)
         max_y = min(surf.get_height() - 1, max_y)
 
-        def sign(p1, p2, p3):
-            return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
+        def sign(p1: tuple, p2: tuple, p3: tuple) -> float:
+            count_1 = (p1[0] - p3[0]) * (p2[1] - p3[1])
+            count_2 = (p2[0] - p3[0]) * (p1[1] - p3[1])
+            return float(count_1 - count_2)
 
         for y in range(min_y, max_y + 1):
             for x in range(min_x, max_x + 1):
@@ -155,8 +153,6 @@ class Render:
         self.ui = UIConfig()
 
         # 2. Sizes of window
-        self.max_w = max_width
-        self.max_h = max_heigth
         self.default_max_w = max_width
         self.default_max_h = max_heigth
 
@@ -169,7 +165,7 @@ class Render:
 
         # 4. Textures and graphics
         self.sheet: Optional[pygame.Surface] = None
-        self.dot_img: Optional[pygame.Surface] = None
+        self.screen: pygame.Surface = pygame.Surface((1, 1))
         self.player_frames: dict = {}
         self.pacman_death: dict = {}
 
@@ -191,31 +187,27 @@ class Render:
         win_w = self.default_max_w
         win_h = self.default_max_h
 
-        # Create the window only once to avoid flashing
-        if not hasattr(self, 'screen') or self.screen is None:
-            # os.environ['SDL_VIDEO_CENTERED'] = '1'
+        # Window setup
+        if self.screen.get_size() == (1, 1):
             self.screen = pygame.display.set_mode((win_w, win_h))
             pygame.display.set_caption("Pac-Man")
 
-        # Add padding to ensure there are grey zones (borders)
-        padding_x = 50
+        # Padding (gray zones)
+        padding = 50
 
-        tile_w = (win_w - padding_x) // grid_w
-        tile_h = (win_h - 50) // grid_h
+        tile_w = (win_w - padding) // grid_w
+        tile_h = (win_h - padding) // grid_h
         self.tile_size = max(1, min(tile_w, tile_h))
 
         maze_w = self.tile_size * grid_w
         maze_h = self.tile_size * grid_h
         self.offset_x = (win_w - maze_w) // 2
-        self.offset_y = (win_h - 50 - maze_h) // 2
+        self.offset_y = (win_h - padding - maze_h) // 2
 
         self.reload_scales()
 
     def reload_scales(self) -> None:
         """Rescale all textures based on current tile_size."""
-        if hasattr(self, 'orig_dot_img') and self.orig_dot_img:
-            self.dot_img = MLXUtils.scale_image(self.orig_dot_img, self.tile_size, self.tile_size)
-
         if hasattr(self, 'orig_player_frames') and self.orig_player_frames:
             p_size = max(1, int(self.tile_size * 0.8))
             for dir_key, orig_frames in self.orig_player_frames.items():
@@ -249,7 +241,7 @@ class Render:
         rect = pygame.Rect(x, y, base * 2, base * 2)
 
         try:
-            surf = cast(pygame.Surface, self.sheet.subsurface(rect))
+            surf = self.sheet.subsurface(rect)
         except ValueError:
             return None
 
@@ -328,18 +320,9 @@ class Render:
                 if not is_wall(gx + 1, gy):  # right
                     draw_line(surf, color, (px + ts, py), (px2, py2), lw)
 
-    def load_dot(self, filepath: str) -> None:
-        """Load the pacgum dot sprite"""
-        try:
-            self.orig_dot_img = pygame.image.load(filepath).convert_alpha()
-            self.dot_img = MLXUtils.scale_image(
-                self.orig_dot_img, self.tile_size, self.tile_size)
-        except (pygame.error, FileNotFoundError) as err:
-            print(f"Warning: Could not load dot sprite '{filepath}': {err}")
-            self.dot_img = None
+    def load_player_frames(self) -> None:
+        """Load all Pac-Man animation frames from the spritesheet."""
 
-    def load_player_frames(self, base_dir: str = "") -> None:
-        """Load all directional Pac-Man animation frames from the spritesheet."""
         if not hasattr(self, 'orig_player_frames'):
             self.orig_player_frames = {}
 
@@ -363,8 +346,9 @@ class Render:
                 x = col * base + 1
                 y = anim_row * base
                 rect = pygame.Rect(x, y, base * 2, base * 2)
+                width, height = self.sheet.get_width(), self.sheet.get_height()
 
-                if x + rect.w <= self.sheet.get_width() and y + rect.h <= self.sheet.get_height():
+                if x + rect.w <= width and y + rect.h <= height:
                     try:
                         raw = self.sheet.subsurface(rect).copy()
                         raw.set_colorkey((255, 0, 255))
@@ -376,21 +360,22 @@ class Render:
                     except ValueError:
                         pass
 
-            # If no frames loaded, use a solid color fallback to avoid crashes
+            # Fallback for Pacman render
             if not orig_frames:
-                surf = pygame.Surface((base * 2, base * 2))
-                surf.fill((255, 255, 0))  # Yellow square fallback
-                orig_frames.append(surf)
-                scaled_frames.append(MLXUtils.scale_image(surf, p_size, p_size))
+                sur = pygame.Surface((base * 2, base * 2))
+                sur.fill((255, 255, 0))
+                orig_frames.append(sur)
+                scaled_frames.append(MLXUtils.scale_image(sur, p_size, p_size))
 
-            # Attempt to load completely closed mouth (typically col 8, row 0)
+            # Loading of closed mouth
             closed_col = 8
             closed_row = 0
             cx = closed_col * base + 1
             cy = closed_row * base
             crect = pygame.Rect(cx, cy, base * 2, base * 2)
+            width, height = self.sheet.get_width(), self.sheet.get_height()
 
-            if cx + crect.w <= self.sheet.get_width() and cy + crect.h <= self.sheet.get_height():
+            if cx + crect.w <= width and cy + crect.h <= height:
                 try:
                     craw = self.sheet.subsurface(crect).copy()
                     craw.set_colorkey((255, 0, 255))
@@ -402,10 +387,14 @@ class Render:
                 except ValueError:
                     pass
 
-            # Fallback for the 3rd frame if loading the closed mouth failed
+            # Fallback for closed mouth
             while len(orig_frames) < 3:
-                orig_frames.append(orig_frames[1] if len(orig_frames) > 1 else orig_frames[0])
-                scaled_frames.append(scaled_frames[1] if len(scaled_frames) > 1 else scaled_frames[0])
+                if len(orig_frames) > 1:
+                    orig_frames.append(orig_frames[1])
+                    scaled_frames.append(scaled_frames[1])
+                else:
+                    orig_frames.append(orig_frames[0])
+                    scaled_frames.append(scaled_frames[0])
 
             self.orig_player_frames[direction] = orig_frames
             self.player_frames[direction] = scaled_frames
@@ -414,16 +403,14 @@ class Render:
         """Draw a pacgum (small dot) at grid position."""
         px = x * self.tile_size + self.offset_x
         py = y * self.tile_size + self.offset_y
-        if self.dot_img:
-            self.screen.blit(self.dot_img, (px, py))
-        else:
-            cx = px + self.tile_size // 2
-            cy = py + self.tile_size // 2
-            r = max(2, self.tile_size // 6)
-            MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (cx, cy), r)
+        cx = px + self.tile_size // 2
+        cy = py + self.tile_size // 2
+        r = max(2, self.tile_size // 10)
+        MLXUtils.draw_circle(self.screen, self.ui.C_TEXT_WHITE, (cx, cy), r)
 
     def draw_powergum(self, x: int, y: int) -> None:
         """Draw a power pellet (big pulsing dot) at grid position (x, y)."""
+
         self._powergum_tick += 1
         pulse = 0.5 + 0.3 * math.sin(self._powergum_tick * 0.05)
         r = max(3, int(self.tile_size * pulse * 0.5))
@@ -434,8 +421,9 @@ class Render:
     def draw_player(self, grid_x: int, grid_y: int,
                     direction: Direction, delta_time: float) -> None:
         """Draw pacman at grid position with directional animation."""
-        px = grid_x * self.tile_size + self.offset_x + 2.5
-        py = grid_y * self.tile_size + self.offset_y + 2.5
+
+        px = grid_x * self.tile_size + self.offset_x
+        py = grid_y * self.tile_size + self.offset_y
 
         self.anim_timer += delta_time
         if self.anim_timer >= self.ANIM_SPEED:
@@ -455,6 +443,7 @@ class Render:
     def draw_pacman_death(self, grid_x: int, grid_y: int,
                           frame_idx: int) -> None:
         """Draw one frame of the Pac-Man death animation."""
+
         frames = self.pacman_death.get("frames", [])
         if not frames:
             return
@@ -468,12 +457,14 @@ class Render:
 
     def render_frame(self) -> None:
         """Flip the display buffer to the monitor."""
+
         pygame.display.flip()
 
     def draw_ghost(
         self, x: int, y: int, color: str, state_val: int, f_timer: float
     ) -> None:
         """Draw ghost with basic bobbing animation based on state."""
+
         px = x * self.tile_size + self.offset_x
         py = y * self.tile_size + self.offset_y
 
@@ -488,13 +479,16 @@ class Render:
             sprite = self.ghost_assets.get(color)
 
         if sprite:
-            offset_center = (self.tile_size - sprite.get_width()) // 2
-            self.screen.blit(sprite, (px + offset_center + 2, py + offset_y + offset_center + 2))
+            off_c = (self.tile_size - sprite.get_width()) // 2
+            gx = px + off_c + 2
+            gy = py + offset_y + off_c + 2
+            self.screen.blit(sprite, (gx - 2.5, gy - 2.5))
 
     def draw_hud(self, score: int, lives: int, time_left: float,
                  level: int, total_levels: int, wave_mode: str,
                  is_eval: bool = False, cheat_str: str = "") -> None:
         """Draw basic game stats at the bottom of the screen."""
+
         sh = self.screen.get_height()
         cx = self.screen.get_width() // 2
         y_pos = sh - 40 if is_eval else sh - 35
@@ -504,7 +498,8 @@ class Render:
         if is_eval:
             hud_text += f"    Mode: {wave_mode}"
 
-        surf = self.ui.font_regular.render(hud_text, True, self.ui.C_TEXT_WHITE)
+        c = self.ui.C_TEXT_WHITE
+        surf = self.ui.font_regular.render(hud_text, True, c)
         rect = surf.get_rect(center=(cx, y_pos + surf.get_height() // 2))
         self.screen.blit(surf, rect)
 
@@ -516,13 +511,17 @@ class Render:
 
     def draw_name_input(self, name: str, score: int, is_victory: bool) -> None:
         """Draw the post-game screen prompting for player name."""
+
         self.screen.fill(self.ui.C_BG)
 
         cx = self.screen.get_width() // 2
         cy = self.screen.get_height() // 2
 
         try:
-            img_path = "./assets/victory-msg.png" if is_victory else "./assets/gameover-msg.png"
+            if is_victory:
+                img_path = "./assets/others/victory-msg.png"
+            else:
+                img_path = "./assets/others/gameover-msg.png"
             title = pygame.image.load(img_path)
         except (FileNotFoundError, pygame.error):
             msg = "VICTORY!" if is_victory else "GAME OVER"
@@ -547,9 +546,13 @@ class Render:
 if __name__ == "__main__":
     render = Render()
     loader = MazeLoader()
+    UI = UIConfig()
 
     # Generate maze first so we know the real grid dimensions
-    loader.generate(width=15, height=18, seed=42, pacgum_count=42)
+    if not loader.generate(width=15, height=18, seed=42, pacgum_count=42):
+        print("Error: Could not generate maze (mazegenerator missing?). Exiting.")
+        import sys
+        sys.exit(1)
     grid = loader.get_grid()
     grid_width = len(grid[0])
     grid_height = len(grid)
@@ -561,14 +564,9 @@ if __name__ == "__main__":
     # Setup display with actual maze size so the window is fully filled
     render.setup_display(grid_width, grid_height)
 
-    # Load dot sprite (pacgum)
-    _dot_path = os.path.join(
-        os.path.dirname(__file__),
-        "..", "assets", "pacman", "other", "dot.png"
-    )
-    render.load_dot(os.path.normpath(_dot_path))
     _sheet_path = os.path.normpath(os.path.join(
-        os.path.dirname(__file__), "..", "assets", "spritesheets", "main-spritesheet.png"
+        os.path.dirname(__file__), "..", "assets", "spritesheets",
+        "main-spritesheet.png"
     ))
     render.load_spritesheet(_sheet_path)
     render.load_player_frames()
@@ -599,7 +597,7 @@ if __name__ == "__main__":
 
         player.update(delta_time, grid)
 
-        render.screen.fill((20, 20, 40))
+        render.screen.fill(UI.GAME_PURPLE)
 
         for y, row in enumerate(grid):
             for x, cell in enumerate(row):

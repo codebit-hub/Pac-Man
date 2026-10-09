@@ -52,11 +52,9 @@ class GameEngine:
 
         # Reach graphics entities
         base_dir = os.path.dirname(__file__)
-        dot_path = os.path.normpath(os.path.join(base_dir, "..", "Assets", "pacman", "other", "dot.png"))
         player_path = os.path.normpath(os.path.join(base_dir, "..", "Assets", "pacman"))
 
-        self.renderer.load_dot(dot_path)
-        self.renderer.load_player_frames(player_path)
+        self.renderer.load_player_frames()
         self.renderer.load_ghost_assets()
 
     def _update_wave_timers(self, delta_time: float) -> None:

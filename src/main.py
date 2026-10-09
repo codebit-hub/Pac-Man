@@ -146,8 +146,6 @@ class Application:
 
         # Use sys._MEIPASS if compiled, otherwise use standard relative path
         base = getattr(sys, '_MEIPASS', os.path.join(os.path.dirname(__file__), ".."))
-        self.render.load_dot(os.path.normpath(
-            os.path.join(base, "assets", "others", "dot.png")))
         self.render.load_spritesheet(os.path.normpath(
             os.path.join(base, "assets", "spritesheets", "main-spritesheet.png")))
         self.render.load_player_frames()
@@ -456,7 +454,7 @@ class Application:
                 self.accumulator -= self.FIXED_DT
 
         # 3. Draw Frame
-        self.render.screen.fill((20, 20, 40))
+        self.render.screen.fill(self.render.ui.GAME_PATH)
         for y, row in enumerate(self.grid):
             for x, cell in enumerate(row):
                 if cell == 0:
