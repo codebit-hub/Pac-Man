@@ -513,7 +513,7 @@ class Application:
         still_alive = []
         for entry in self.floating_texts:
             txt, fx, fy, ttl = entry
-            surf = self.ui.font_hud.render(txt, True, self.ui.C_TEXT_WHITE)
+            surf = self.ui.font_regular.render(txt, True, self.ui.C_TEXT_WHITE)
             self.render.screen.blit(surf, (fx, fy))
             entry[3] -= dt
             if entry[3] > 0:
