@@ -1,11 +1,10 @@
-import os
 import sys
 import pygame
 import time
 
 from maze_loader import MazeLoader
 from player import Player, Direction
-from ghost import GhostState, Blinky, Pinky, Inky, Clyde
+from ghost import Ghost, GhostState, Blinky, Pinky, Inky, Clyde
 from renderer import Render
 
 
@@ -49,10 +48,6 @@ class GameEngine:
         # Setup Frontend
         self.renderer = Render()
         self.renderer.setup_display(grid_w, grid_h)
-
-        # Reach graphics entities
-        base_dir = os.path.dirname(__file__)
-        player_path = os.path.normpath(os.path.join(base_dir, "..", "Assets", "pacman"))
 
         self.renderer.load_player_frames()
         self.renderer.load_ghost_assets()
@@ -127,7 +122,7 @@ class GameEngine:
             if px == ghost.grid_x and py == ghost.grid_y:
                 self._resolve_collision(ghost)
 
-    def _resolve_collision(self, ghost) -> None:
+    def _resolve_collision(self, ghost: Ghost) -> None:
         """Determines outcome based on ghost state"""
 
         # Pacman eats a ghost
@@ -184,7 +179,7 @@ class GameEngine:
                 delta_time = current_time - last_time
 
             last_time = current_time
-            
+
             # Event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -233,9 +228,6 @@ class GameEngine:
                 self.player.grid_x, self.player.grid_y,
                 self.player.current_dir, delta_time
             )
-
-            # Note: Vokotera will need to add a `draw_ghost()` method to renderer
-            # For now, we rely on the grid and Pac-Man rendering to test the loop.
 
             self.renderer.render_frame()
 

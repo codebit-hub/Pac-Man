@@ -54,7 +54,7 @@ class Highscorescreen:
                 color = self.ui.C_TEXT_WHITE
 
             # Left align name
-            txt = f"{i+1}. {hs['name']}"
+            txt = f"{i + 1}. {hs['name']}"
             name_txt = self.ui.font_regular.render(txt, True, color)
             pos = (bg_rect.left + 40, start_y + (i * step_y))
             name_rect = name_txt.get_rect(midleft=pos)

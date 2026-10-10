@@ -31,7 +31,9 @@ class ConfigManager:
         }
         self._config: dict[str, Any] = self._defaults.copy()
 
-    def _catch_duplic_keys(self, ordered_pairs) -> dict:
+    def _catch_duplic_keys(
+        self, ordered_pairs: list[tuple[str, Any]]
+    ) -> dict[str, Any]:
         """Catches duplicate keys in config.json"""
 
         duplicates = {}
@@ -76,7 +78,8 @@ class ConfigManager:
 
             # Check for duplicate keys
             # data = json.loads(content)
-            data = json.loads(content, object_pairs_hook=self._catch_duplic_keys)
+            object_pairs_hook = self._catch_duplic_keys
+            data = json.loads(content, object_pairs_hook=object_pairs_hook)
 
             if not isinstance(data, dict):
                 print("Warning: JSON is not a dictionary.")

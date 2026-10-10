@@ -127,7 +127,7 @@ class GameState:
             # Reset frightened state to prevent logic and audio bleed-over
             self.is_frightened = False
             self.frigthened_timer = 0.0
-            
+
     def _check_victory(self) -> None:
         """Manages level progression"""
 

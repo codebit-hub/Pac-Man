@@ -30,10 +30,12 @@ class HighScoreManager:
                 if isinstance(data, list):
                     valid_scores = []
                     for entry in data:
-                        if (isinstance(entry, dict) and 'name' in entry
-                            and 'score' in entry
-                            and isinstance(entry['score'], int)
-                            and entry['score'] >= 0
+                        if (
+                            isinstance(entry, dict)
+                            and "name" in entry
+                            and "score" in entry
+                            and isinstance(entry["score"], int)
+                            and entry["score"] >= 0
                         ):
                             valid_scores.append(entry)
                     self.scores = valid_scores
@@ -74,5 +76,5 @@ class HighScoreManager:
 
         except OSError as err:
             print(f"Warning: Could not have saved highscores: {err}")
-        #except OSError:
-        #   pass
+        except OSError:
+            pass

@@ -23,14 +23,16 @@ class AudioManager:
         # base = os.path.dirname(__file__)
         # self.path = os.path.normpath(
         #    os.path.join(base, "..", "assets", "audio", "wav")
-        #)
+        # )
         import sys
         base = getattr(
-            sys, '_MEIPASS', os.path.join(os.path.dirname(__file__), "..")
-            )
+            sys,
+            "_MEIPASS",
+            os.path.join(os.path.dirname(__file__), ".."),
+        )
         self.path = os.path.normpath(
             os.path.join(base, "assets", "audio", "wav")
-            )
+        )
 
         # sfx dict stores single-shot sound files
         self.sfx: dict[str, pygame.mixer.Sound | None] = {}

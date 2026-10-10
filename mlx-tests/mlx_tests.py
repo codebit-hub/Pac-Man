@@ -5,17 +5,19 @@ workflow, and limitations of MiniLibX.
 """
 
 import pygame
-import sys
 import time
 
 
-def mlx_init():
+def mlx_init() -> str:
     """Init MLX and launches graphical system."""
 
     pygame.init()
     return "mlx_connect_ptr"
 
-def mlx_new_window(mlx_ptr, width, height, title):
+
+def mlx_new_window(
+    mlx_ptr: str, width: int, height: int, title: str
+) -> pygame.Surface:
     """Creates a new fixed-size window."""
 
     pygame.display.set_caption(title)
@@ -25,7 +27,7 @@ def mlx_new_window(mlx_ptr, width, height, title):
 if __name__ == "__main__":
     # Init library
     mlx = mlx_init()
-   # time.sleep(5)
+    # time.sleep(5)
 
     # Create window
     window = mlx_new_window(mlx, 400, 300, "MLX Pac-Man Test")

@@ -7,6 +7,7 @@ import random
 import pygame
 import math
 import time
+from typing import Callable
 
 from config import ConfigManager
 from game_state import GameState, State
@@ -25,58 +26,56 @@ from ui_config import UIConfig
 class Application:
     """Central app controller managing states and transitions."""
 
-    def __init__(self, config_path: str) -> None:
-        self.render = Render()
+    def __init__(self, config_path: str = "config.json") -> None:
+        """Initialize the application using the configuration."""
+
+        # 1. Initizalition
         self.config = ConfigManager()
+        self.config.load(config_path)
         self.audio = AudioManager()
+        self.render = Render()
         self.ui = UIConfig()
 
-        # Load config from argv
-        self.config.load(config_path)
-
-        lvl_w = self.config.get("level")[0]["width"]
-        lvl_h = self.config.get("level")[0]["height"]
-        self.render.setup_display((lvl_w * 2) + 1, (lvl_h * 2) + 1)
+        # 2. Initialization of window
+        lvl_cfg = self.config.get("level")[0]
+        lvl_w = (lvl_cfg["width"] * 2) + 1
+        lvl_h = (lvl_cfg["height"] * 2) + 1
+        self.render.setup_display(lvl_w, lvl_h)
         self.screen = self.render.screen
 
-        # Configurations & Highscores
-        # cfg_path = os.path.join(os.path.dirname(__file__), "..", "config.json")
-        # self.config.load(cfg_path)
-
+        # 3. Data and managers
         self.game_state = GameState(self.config)
-        self.highscores = HighScoreManager(self.config.get("highscore_filename"))
+        hs_file = self.config.get("highscore_filename")
+        self.highscores = HighScoreManager(hs_file)
+
+        # 4. Window and menu
         self.highscore_screen = Highscorescreen(self.screen, self.highscores)
         self.pause_menu_screen = PauseMenu(self.screen)
-
-        # Setup Vokotera's Menu and Monkey-Patch the selections
         self.menu = Menu(self.screen)
-        self.app_state = "MENU"
-        # MENU, PLAYING, GAME_OVER, HIGHSCORES
 
-        # New state variables
+        # 5. State variables
+        self.app_state = "MENU"  # MENU, PLAYING, GAME_OVER, HIGHSCORES
+        self.is_eval = self.config.get("game_mode") == "evaluation"
         self.pause_selected = 0
         self.input_name = ""
-        self.is_eval = self.config.get("game_mode") == "evaluation"
         self.invincible = False
+
+        # 6. Time logic
         self.intro_timer = 0.0
         self.last_beep_sec = -1
-
-        # Decoupling frame rendering from backend logic
-        # Locks game logic to 60 updates per second
         self.accumulator = 0.0
         self.FIXED_DT = 1.0 / 60.0
 
-        # Track manual speed changes to persist them across level/death reloads
-        self.custom_player_speed = None
-        self.custom_ghost_speeds = {}
+        # 7. Modificatons
+        self.custom_player_speed: float | None = None
+        self.custom_ghost_speeds: dict[str, float] = {}
+        self.floating_texts: list[list] = []
 
-        # Floating score popups: list of [text, pixel_x, pixel_y, time_left]
-        self.floating_texts: list = []
-
-        # Store the original menu activate method
-        self._og_activate = self.menu._activate_item
+        # 8. Override default menu activation handlers
+        self._og_activate: Callable[[int], None] = self.menu._activate_item
 
         def custom_activate(index: int) -> None:
+            """Override default menu behavior for Start, etc."""
             if index == 0:
                 self._start_new_game()
             elif index == 1:
@@ -86,7 +85,6 @@ class Application:
                 sys.exit()
             else:
                 self._og_activate(index)
-
         self.menu._activate_item = custom_activate
 
     def _start_new_game(self) -> None:
@@ -94,6 +92,7 @@ class Application:
         self.game_state.start_game()
         self._load_level()
         self.app_state = "PLAYING"
+
         # Stop the menu music and play the Level 1 intro
         self.audio.stop_bgm()
         self.audio.play_sfx("intro")
@@ -143,17 +142,21 @@ class Application:
         # Update the existing renderer to dynamically scale the tile size
         self.render.setup_display(grid_w, grid_h)
 
-
         # Use sys._MEIPASS if compiled, otherwise use standard relative path
-        base = getattr(sys, '_MEIPASS', os.path.join(os.path.dirname(__file__), ".."))
-        self.render.load_spritesheet(os.path.normpath(
-            os.path.join(base, "assets", "spritesheets", "main-spritesheet.png")))
+        fallback = os.path.join(os.path.dirname(__file__), "..")
+        base = getattr(sys, "_MEIPASS", fallback)
+        spritesheet = "main-spritesheet.png"
+
+        sheet_path = os.path.normpath(
+            os.path.join(base, "assets", "spritesheets", spritesheet)
+        )
+        self.render.load_spritesheet(sheet_path)
         self.render.load_player_frames()
 
         self.render.load_ghost_assets()
         self.render.load_pacman_death()
 
-        # Place into the game only the available pacgums based on empty corridors
+        # Place into the game only the available pacgums
         actual_pacgums = sum(row.count(2) for row in self.grid)
         self.game_state.setup_level(actual_pacgums)
 
@@ -220,8 +223,8 @@ class Application:
             for ev in pygame.event.get():
                 if ev.type == pygame.QUIT:
                     pygame.quit()
-                    import sys; sys.exit()
-            self.render.screen.fill((0, 0, 0))
+                    sys.exit()
+            self.render.screen.fill(self.ui.C_BG)
             for gy, row in enumerate(self.grid):
                 for gx, cell in enumerate(row):
                     if cell in (0, 4):
@@ -252,7 +255,11 @@ class Application:
         # If frightened mode just ended, restore previous wave state
         if self.was_frightened:
             self.was_frightened = False
-            tgt = GhostState.SCATTER if self.is_scatter_wave else GhostState.CHASE
+            if self.is_scatter_wave:
+                tgt = GhostState.SCATTER
+            else:
+                tgt = GhostState.CHASE
+
             for g in self.ghosts:
                 if g.state == GhostState.FLEE:
                     g.state = tgt
@@ -262,7 +269,11 @@ class Application:
         if self.wave_timer <= 0:
             self.is_scatter_wave = not self.is_scatter_wave
             self.wave_timer = 7.0 if self.is_scatter_wave else 20.0
-            tgt = GhostState.SCATTER if self.is_scatter_wave else GhostState.CHASE
+
+            if self.is_scatter_wave:
+                tgt = GhostState.SCATTER
+            else:
+                tgt = GhostState.CHASE
 
             for g in self.ghosts:
                 if g.state != GhostState.EATEN:
@@ -276,7 +287,6 @@ class Application:
             dt = current_time - last_time
 
             # Manually cap framerate to about 60 FPS
-            # dt = min(clock.tick(60) / 1000.0, 0.2)
             if dt < (1.0 / 60.0):
                 time.sleep((1.0 / 60.0) - dt)
                 current_time = time.perf_counter()
@@ -328,8 +338,8 @@ class Application:
                     self.player.set_direction(Direction.RIGHT)
                 elif ev.key == pygame.K_m:
                     self.audio.toggle_mute()
-                elif ev.key in (
-                    pygame.K_p, pygame.K_SPACE, pygame.K_BACKSPACE, pygame.K_ESCAPE):
+                elif ev.key in (pygame.K_p, pygame.K_SPACE, pygame.K_BACKSPACE,
+                                pygame.K_ESCAPE):
                     self.app_state = "PAUSE"
                     self.pause_selected = 0
                     self.intro_timer = 0.0
@@ -345,7 +355,7 @@ class Application:
             # Add the real elapsed time to the accumulator
             self.accumulator += dt
 
-            # Cap accumulator at 0.1s to prevent a "spiral of death" if the MLX loop heavily freezes
+            # Cap accumulator at 0.1s to prevent a "spiral of death"
             if self.accumulator > 0.1:
                 self.accumulator = 0.1
 
@@ -368,7 +378,8 @@ class Application:
                 if time_up and not self.invincible:
                     self.game_state.lose_life()
                     if self.game_state.state != State.GAME_OVER:
-                        self._play_death_anim(self.player.grid_x, self.player.grid_y)
+                        grid_x, grid_y = self.player.grid_x, self.player.grid_y
+                        self._play_death_anim(grid_x, grid_y)
                         self.player.respawn()
                         self._init_ghosts()
                         self.intro_timer = 2.0
@@ -403,13 +414,21 @@ class Application:
                     if g.speed > 0:
                         old_state = g.state
                         g.update(
-                            self.FIXED_DT, self.grid, self.player.grid_x, self.player.grid_y,
-                            self.player.current_dir, self.blinky.grid_x, self.blinky.grid_y
+                            self.FIXED_DT,
+                            self.grid,
+                            self.player.grid_x,
+                            self.player.grid_y,
+                            self.player.current_dir,
+                            self.blinky.grid_x,
+                            self.blinky.grid_y,
                         )
-                        if old_state == GhostState.EATEN and g.state != GhostState.EATEN:
+                        if (
+                            old_state == GhostState.EATEN
+                            and g.state != GhostState.EATEN
+                        ):
                             self.audio.play_sfx("respawn")
 
-                # 2. Consumption & Collisions (Now safely checks every micro-step)
+                # 2. Consumption & Collisions
                 px, py = self.player.grid_x, self.player.grid_y
                 if self.grid[py][px] == 2:
                     self.grid[py][px] = 1
@@ -424,9 +443,14 @@ class Application:
                     gx, gy = g.grid_x, g.grid_y
                     pgx, pgy = prev_g_pos[g]
 
-                    is_collision = (px == gx and py == gy) or (
-                        px == pgx and py == pgy and
-                        prev_px == gx and prev_py == gy
+                    is_collision = (
+                        (px == gx and py == gy)
+                        or (
+                            px == pgx
+                            and py == pgy
+                            and prev_px == gx
+                            and prev_py == gy
+                        )
                     )
 
                     if is_collision:
@@ -435,10 +459,20 @@ class Application:
                             if g.state != GhostState.FLEE:
                                 self.game_state.eat_ghost()
                                 self.audio.play_sfx("eat_ghost")
-                                pts = f"{self.config.get('points_per_ghost')}"
-                                pixel_x = (self.render.offset_x + px * self.render.tile_size)
-                                pixel_y = (self.render.offset_y + py * self.render.tile_size)
-                                self.floating_texts.append([pts, pixel_x, pixel_y, 0.8])
+                                pts = str(
+                                    self.config.get("points_per_ghost")
+                                )
+                                pixel_x = (
+                                    self.render.offset_x
+                                    + px * self.render.tile_size
+                                )
+                                pixel_y = (
+                                    self.render.offset_y
+                                    + py * self.render.tile_size
+                                )
+                                self.floating_texts.append(
+                                    [pts, pixel_x, pixel_y, 0.8]
+                                )
                         elif g.state in (GhostState.CHASE, GhostState.SCATTER):
                             if not self.invincible:
                                 self.game_state.lose_life()
@@ -472,7 +506,11 @@ class Application:
         )
         for g in self.ghosts:
             self.render.draw_ghost(
-                g.grid_x, g.grid_y, g.color_name, g.state.value, self.game_state.frigthened_timer
+                g.grid_x,
+                g.grid_y,
+                g.color_name,
+                g.state.value,
+                self.game_state.frigthened_timer,
             )
 
         # Determine text for the current wave mode
@@ -525,10 +563,12 @@ class Application:
                 surf = pygame.image.load("./assets/ready-photo.png")
                 ready_surf = MLXUtils.scale_image(surf, 200, 200)
             except (FileNotFoundError, pygame.error):
-                ready_surf = self.ui.font_regular.render("READY!", True, self.ui.C_TEXT_YELLOW)
+                c = self.ui.C_TEXT_YELLOW
+                ready_surf = self.ui.font_regular.render("READY!", True, c)
             cx = self.render.screen.get_width() // 2
             cy = self.render.screen.get_height() // 2 + 30
-            self.render.screen.blit(ready_surf, ready_surf.get_rect(center=(cx, cy)))
+            rect = ready_surf.get_rect(center=(cx, cy))
+            self.render.screen.blit(ready_surf, rect)
 
         self.render.render_frame()
 
@@ -557,8 +597,6 @@ class Application:
             self.input_name, self.game_state.score, is_victory
         )
         self.render.render_frame()
-
-
 
 
 if __name__ == "__main__":
