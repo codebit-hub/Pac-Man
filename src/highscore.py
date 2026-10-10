@@ -14,12 +14,14 @@ class HighScoreManager:
 
     def __init__(self, filename: str) -> None:
         """Init the highscore file manager."""
+
         self.filename = filename
         self.scores: list[dict[str, Any]] = []
         self._load_scores()
 
     def _load_scores(self) -> None:
         """Safely load scores from JSON, ignoring errors."""
+
         if not os.path.exists(self.filename):
             return
 
@@ -30,7 +32,8 @@ class HighScoreManager:
                 if isinstance(data, list):
                     valid_scores = []
                     for entry in data:
-                        if (isinstance(entry, dict) and 'name' in entry
+                        if (
+                            isinstance(entry, dict) and 'name' in entry
                             and 'score' in entry
                             and isinstance(entry['score'], int)
                             and entry['score'] >= 0
@@ -58,6 +61,7 @@ class HighScoreManager:
 
         # Restrict to alphanumeric + spaces, max 10 chars
         clean_name = re.sub(r'[^a-zA-Z0-9 ]', '', name)[:10].strip()
+
         if not clean_name:
             clean_name = "ANONYMOUS"
 
@@ -74,5 +78,5 @@ class HighScoreManager:
 
         except OSError as err:
             print(f"Warning: Could not have saved highscores: {err}")
-        #except OSError:
+        # except OSError:
         #   pass
