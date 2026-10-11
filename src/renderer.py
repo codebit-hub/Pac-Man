@@ -56,7 +56,7 @@ class MLXUtils:
         return result
 
     @staticmethod
-    def draw_rect(surf: pygame.Surface, color: tuple,
+    def draw_rect(surf: pygame.Surface, color: tuple[int, ...],
                   rect: pygame.Rect) -> None:
         """MLX-compliant rectangle drawing (pixel by pixel)."""
         x_start, y_start, w, h = rect
@@ -70,8 +70,10 @@ class MLXUtils:
                 surf.set_at((x, y), color)
 
     @staticmethod
-    def draw_line(surf: pygame.Surface, color: tuple,
-                  start: tuple, end: tuple, width: int = 1) -> None:
+    def draw_line(surf: pygame.Surface, color: tuple[int, ...],
+                  start: tuple[int | float, int | float],
+                  end: tuple[int | float, int | float],
+                  width: int = 1) -> None:
         """MLX-compliant line drawing (Bresenham's algorithm)."""
 
         x0, y0 = int(start[0]), int(start[1])
@@ -102,8 +104,9 @@ class MLXUtils:
                 y0 += sy
 
     @staticmethod
-    def draw_circle(surf: pygame.Surface, color: tuple,
-                    center: tuple, radius: int) -> None:
+    def draw_circle(surf: pygame.Surface, color: tuple[int, ...],
+                    center: tuple[int | float, int | float],
+                    radius: int) -> None:
         """MLX-compliant circle drawing."""
         width, height = surf.get_width(), surf.get_height()
         cx, cy = int(center[0]), int(center[1])
@@ -116,8 +119,10 @@ class MLXUtils:
                         surf.set_at((px, py), color)
 
     @staticmethod
-    def draw_triangle(surf: pygame.Surface, color: tuple,
-                      p1: tuple, p2: tuple, p3: tuple) -> None:
+    def draw_triangle(surf: pygame.Surface, color: tuple[int, ...],
+                      p1: tuple[int | float, int | float],
+                      p2: tuple[int | float, int | float],
+                      p3: tuple[int | float, int | float]) -> None:
         """MLX-compliant filled triangle drawing."""
         min_x = int(min(p1[0], p2[0], p3[0]))
         max_x = int(max(p1[0], p2[0], p3[0]))
@@ -129,7 +134,9 @@ class MLXUtils:
         max_x = min(surf.get_width() - 1, max_x)
         max_y = min(surf.get_height() - 1, max_y)
 
-        def sign(p1: tuple, p2: tuple, p3: tuple) -> float:
+        def sign(p1: tuple[int | float, int | float],
+                 p2: tuple[int | float, int | float],
+                 p3: tuple[int | float, int | float]) -> float:
             count_1 = (p1[0] - p3[0]) * (p2[1] - p3[1])
             count_2 = (p2[0] - p3[0]) * (p1[1] - p3[1])
             return float(count_1 - count_2)
@@ -166,8 +173,8 @@ class Render:
         # 4. Textures and graphics
         self.sheet: Optional[pygame.Surface] = None
         self.screen: pygame.Surface = pygame.Surface((1, 1))
-        self.player_frames: dict = {}
-        self.pacman_death: dict = {}
+        self.player_frames: dict[Direction, list[pygame.Surface]] = {}
+        self.pacman_death: dict[str, list[pygame.Surface]] = {}
 
         # 5. Animations
         self.ANIM_SPEED: float = 0.1
@@ -283,7 +290,7 @@ class Render:
         MLXUtils.draw_rect(self.screen, fill,
                            pygame.Rect(px, py, self.tile_size, self.tile_size))
 
-    def draw_walls_grid(self, grid: list) -> None:
+    def draw_walls_grid(self, grid: list[list[int]]) -> None:
         """Draw wall borders only on edges that face a corridor"""
         if not self.screen:
             return
@@ -340,8 +347,8 @@ class Render:
         }
 
         for direction, col in dir_cols.items():
-            orig_frames: list = []
-            scaled_frames: list = []
+            orig_frames: list[pygame.Surface] = []
+            scaled_frames: list[pygame.Surface] = []
             for anim_row in (0, 2):
                 x = col * base + 1
                 y = anim_row * base

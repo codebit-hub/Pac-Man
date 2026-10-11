@@ -61,8 +61,10 @@ class Menu:
         except pygame.error:
             pass
 
-    def draw_main_menu(self, top_scores: Optional[list] = None,
-                       audio: Optional[Any] = None) -> None:
+    def draw_main_menu(
+        self, top_scores: Optional[list[dict[str, Any]]] = None,
+        audio: Optional[Any] = None
+    ) -> None:
         """Draws the main menu with high scores and settings"""
         self.screen.fill((0, 0, 0))
 

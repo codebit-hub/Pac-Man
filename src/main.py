@@ -7,7 +7,7 @@ import random
 import pygame
 import math
 import time
-from typing import Callable
+from typing import Callable, Any
 
 from config import ConfigManager
 from game_state import GameState, State
@@ -69,7 +69,7 @@ class Application:
         # 7. Modificatons
         self.custom_player_speed: float | None = None
         self.custom_ghost_speeds: dict[str, float] = {}
-        self.floating_texts: list[list] = []
+        self.floating_texts: list[list[Any]] = []
 
         # 8. Override default menu activation handlers
         self._og_activate: Callable[[int], None] = self.menu._activate_item
