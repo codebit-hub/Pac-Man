@@ -78,8 +78,9 @@ class ConfigManager:
 
             # Check for duplicate keys
             # data = json.loads(content)
-            object_pairs_hook = self._catch_duplic_keys
-            data = json.loads(content, object_pairs_hook=object_pairs_hook)
+            data = json.loads(
+                content, object_pairs_hook=self._catch_duplic_keys
+            )
 
             if not isinstance(data, dict):
                 print("Warning: JSON is not a dictionary.")

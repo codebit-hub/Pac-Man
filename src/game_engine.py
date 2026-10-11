@@ -1,10 +1,11 @@
 import sys
 import pygame
 import time
+from typing import Any
 
 from maze_loader import MazeLoader
 from player import Player, Direction
-from ghost import Ghost, GhostState, Blinky, Pinky, Inky, Clyde
+from ghost import GhostState, Blinky, Pinky, Inky, Clyde
 from renderer import Render
 
 
@@ -122,7 +123,7 @@ class GameEngine:
             if px == ghost.grid_x and py == ghost.grid_y:
                 self._resolve_collision(ghost)
 
-    def _resolve_collision(self, ghost: Ghost) -> None:
+    def _resolve_collision(self, ghost: Any) -> None:
         """Determines outcome based on ghost state"""
 
         # Pacman eats a ghost
