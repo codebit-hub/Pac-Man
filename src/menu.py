@@ -160,7 +160,7 @@ class Menu:
                     surf = self.ui.font_regular.render(
                         text, True, (255, 255, 255))
                     y = cy + 155 + (idx * 25)
-                    rect = surf.get_rect(center=(cx + 10, y))
+                    rect = surf.get_rect(center=(cx, y))
                     self.screen.blit(surf, rect)
 
             # 4. Draw Animation

@@ -503,7 +503,7 @@ class Render:
         hud_text = (f"LEVEL: {level}/{total_levels}    SCORE: {score}     "
                     f"LIVES: {lives}    TIME: {int(time_left)}")
         if is_eval:
-            hud_text += f"    Mode: {wave_mode}"
+            hud_text += f"    MODE: {wave_mode}"
 
         c = self.ui.C_TEXT_WHITE
         surf = self.ui.font_regular.render(hud_text, True, c)

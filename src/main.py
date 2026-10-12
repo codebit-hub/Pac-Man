@@ -1,6 +1,5 @@
 """Master execution script integrating Menu, Game, and Highscores."""
 
-from renderer import MLXUtils
 import os
 import sys
 import random
@@ -15,7 +14,7 @@ from highscore import HighScoreManager
 from maze_loader import MazeLoader
 from player import Player, Direction
 from ghost import GhostState, Blinky, Pinky, Inky, Clyde
-from renderer import Render
+from renderer import Render, MLXUtils
 from menu import Menu
 from highscore_screen import Highscorescreen
 from audio import AudioManager

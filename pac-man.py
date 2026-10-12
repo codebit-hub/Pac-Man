@@ -1,15 +1,15 @@
-from src.main import Application
 """
 Entery point for the game.
 Validates CLI arguments, loads the config file and launches the game.
 """
 
-import sys
 import os
-
+import sys
 
 # Adjusting the game path
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+
+from src.main import Application  # noqa: E402
 
 
 def get_resource_path(relative_path: str) -> str:

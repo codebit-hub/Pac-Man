@@ -42,7 +42,7 @@ class PauseMenu:
             ]
             separator_idx = 3
         else:
-            labels = ["Resume Game", "Return to main menu", mute_label]
+            labels = ["RESUME GAME", "RETURN TO MAIN MENU", mute_label]
             separator_idx = -1
 
         for ev in pygame.event.get():
