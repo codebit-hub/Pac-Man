@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by dporhomo, vokatera.*
+*This project has been created as part of the 42 curriculum by dporhomo, vokotera.*
 
 # Pac-Man
 
@@ -50,7 +50,6 @@ If you wish to compile the standalone package yourself from the source code:
 2. Run the build command from the root of the repository:
 ```bash
 make build
-
 ```
 
 
@@ -65,7 +64,6 @@ A pre-compiled Linux build has been uploaded as an unlisted, restricted project 
 3. **Extract:** Unzip the downloaded file:
 ```bash
 unzip pac-man-linux.zip -d pac-man-game
-
 ```
 
 
@@ -73,7 +71,6 @@ unzip pac-man-linux.zip -d pac-man-game
 ```bash
 cd pac-man-game
 ./pac-man
-
 ```
 
 
@@ -129,37 +126,51 @@ Mazes are generated dynamically using the `A-Maze-ing` package, orchestrated by 
 The backend is built around a central `Application` orchestrator that acts as a finite state machine (`MENU`, `PLAYING`, `PAUSE`, `NAME_INPUT`, `HIGHSCORES`).
 
 **Front-End Features & Trade-Offs:**
-* **Retro UI & Animations:** The front-end renders a fully responsive grid matching the configuration file. It features animated menus, animated entity sprites using a spritesheet, and a persistent bottom HUD (Score, Lives, Level, Timer).
-<<<<<<< HEAD
-* **Trade-offs:** We actively traded Pygame's hardware-accelerated shape rendering (`pygame.draw`) for custom software-rendering loops (`MLXUtils`) to strictly comply with the MLX requirement. While this introduces a CPU bottleneck, it guarantees algorithmic authenticity. 
-=======
-* **Trade-offs:** We actively traded Pygame's hardware-accelerated shape rendering (`pygame.draw`) for custom software-rendering loops (`MLXUtils`) to strictly comply with the MLX requirement. While this introduces a CPU bottleneck, it guarantees algorithmic authenticity.
->>>>>>> origin/MLX-Backend
+* **Strict MLX Software Rendering vs. Hardware Acceleration (CPU Bottleneck):**
+  * *Constraint:* The 42 subject mandates that *every graphical library function used must have a direct equivalent in the MiniLibX (MLX) library (`mlx.h`)*. High-level Pygame drawing primitives (`pygame.draw.rect`, `pygame.draw.circle`, `pygame.draw.line`, `pygame.draw.polygon`) have no equivalent in MLX, which only provides single-pixel manipulation (`mlx_pixel_put`) and direct image blitting (`mlx_put_image_to_window`).
+  * *Trade-off & Solution:* We completely eliminated `pygame.draw` and implemented a dedicated `MLXUtils` class. All geometry is drawn via custom software loops using `Surface.set_at((x, y), color)`:
+    * Rectangles & Walls (`MLXUtils.draw_rect`): Nested loops with strict boundary clipping (`min`, `max`) against window boundaries.
+    * Dots & Pellets (`MLXUtils.draw_circle`): Bounding-box iteration evaluating the Pythagorean circle equation ($x^2 + y^2 \le r^2$).
+    * Lines (`MLXUtils.draw_line`): Integer-only Bresenham's line algorithm with configurable width offset.
+    * Triangles & Pointers (`MLXUtils.draw_triangle`): Bounding-box reduction with half-plane 2D cross-product edge tests (`sign()`).
+  * *Compromise:* Executing pixel math in Python bytecode introduces an inherent CPU bottleneck. While modern GPUs handle geometric primitives virtually for free, our pure CPU approach strictly guarantees algorithmic authenticity and 100% compliance with 42 curriculum standards.
 
-**Fixed Timestep & Collision Consistency:**
-The CPU-heavy pixel-by-pixel rendering inherently introduces artificial frame lag. Using a standard frame-independent `delta_time` caused high-speed entities to teleport across multiple tiles in a single frame, phasing through pacgums and missing collisions. To guarantee exact logic execution at any dynamic speed (from 0 to 10 in evaluation mode), the engine implements a **Fixed Timestep with an Accumulator**. This architecture completely decouples the physical rendering loop from the backend physics loop. It accumulates real-world frame lag and processes the game logic in strict 0.016-second micro-steps before drawing to the screen. This ensures 100% collision accuracy and consistent rendering behavior.
+* **Asset Scaling Strategy: Eager Caching vs. Real-Time Nearest-Neighbor:**
+  * *Constraint:* MLX lacks an image-scaling routine (such as `pygame.transform.scale`).
+  * *Trade-off & Solution:* We authored `MLXUtils.scale_image` using manual nearest-neighbor interpolation (`src_x = min(int(dst_x * src_w / new_w), src_w - 1)`). However, running this software loop per frame for dozens of animated sprites would drop framerates below playable thresholds.
+  * *Compromise:* We implemented an **eager asset caching architecture**. All spritesheets, player animations, ghost direction frames, and UI icons are scaled once via `MLXUtils` at grid initialization and cached in memory. Runtime frames exclusively use basic blit operations (`mlx_put_image_to_window` equivalent), preserving both MLX mathematical compliance and a rock-solid 60 FPS.
+
+* **Color Modulation & UI Feedback (`colorize_icon` vs. SDL Blend Flags):**
+  * *Constraint:* Hardware blend modes (e.g. `pygame.BLEND_RGB_ADD`) do not exist in MLX.
+  * *Trade-off & Solution:* In `MLXUtils.colorize_icon`, button hover highlights, menu selections, and entity flashing are implemented by directly inspecting raw surface pixel RGBA channels, ignoring transparent pixels (`a > 0`), and arithmetically shifting RGB values with explicit 8-bit clamping (`min(255, val + add)`). This replicates direct memory buffer manipulation (`mlx_get_data_addr`).
+
+* **Dynamic Window Geometry vs. Fixed-Aspect Retro Tile Grid:**
+  * *Constraint:* The game dynamically loads levels with variable grid dimensions (e.g., 15×15 up to 30×30 cells, expanded to $(2W + 1) \times (2H + 1)$ by the maze algorithm).
+  * *Trade-off & Solution:* Rather than stretching sprites or letterboxing with uneven borders, the window dynamically sizes itself to the exact grid width and height (`tile_size = 24px`), appending a standardized vertical offset for the telemetry HUD. This ensures crisp pixel art without non-uniform scaling or visual distortion.
+
+* **Decoupled Simulation: Fixed Timestep Accumulator:**
+  * *Constraint:* CPU-heavy software rendering creates timing variance. Under standard variable `delta_time`, moving at high speeds or suffering a CPU spike caused Pac-Man to jump multiple tiles in a single frame, skipping pellets (the "tunneling" bug).
+  * *Trade-off & Solution:* Front-end rendering is completely decoupled from physics simulation via a **Fixed Timestep Accumulator** (`FIXED_DT = 0.016s`). Render lag never influences collision detection or gameplay fairness.
+
+* **Audio System Graceful Degradation:**
+  * *Constraint:* 42 evaluation environments (headless clusters, SSH tunnels, WSL, VMs without audio sinks) often crash when initializing sound cards.
+  * *Trade-off & Solution:* The `AudioManager` wraps all mixer initialization and playback in safe exception guards. If sound hardware is missing or fails, the game falls back silently to a no-op state without crashing, while still exposing in-game mute options in the pause menu.
+
+* **HUD Telemetry & Evaluation Feedback:**
+  * The persistent bottom HUD tracks Level, Score, Lives, and remaining Level Time. In `"evaluation"` mode, it dynamically displays real-time ghost wave states (`MODE: SCATTER / CHASE / FLEE`), giving evaluators direct visual verification of the underlying state machine.
 
 **MLX Library Compliance:**
-<<<<<<< HEAD
-The project was explicitly designed to comply with the constraint that *any graphical library function used must have a direct equivalent in the MiniLibX (MLX) library*. Because Pygame's built-in drawing primitives (like `pygame.draw.rect` or `pygame.draw.circle`) have no equivalent in MLX (which only provides pixel rendering), we implemented a custom `MLXUtils` class. All shapes and image processing were achieved using manual pixel-by-pixel loops.
-=======
 The project was explicitly designed to comply with the constraint that *any graphical library function used must have a direct equivalent in the MiniLibX (MLX) library*. Because Pygame's built-in drawing primitives have no equivalent in MLX (which only provides pixel rendering), we implemented a custom `MLXUtils` class. Furthermore, standard Pygame timing functions (`pygame.time.Clock`, `get_ticks()`) were entirely stripped from the backend and replaced with Python's native `time.perf_counter()` to strictly mirror standard C-library time management.
->>>>>>> origin/MLX-Backend
 
 | Game Implementation (Python/Pygame) | MLX Equivalent (`mlx.h`) | Description |
 |-------------------------------------|--------------------------|-------------|
-| `Surface.set_at((x, y), color)` inside nested `for` loops (`MLXUtils.draw_rect`, `draw_circle`) | `mlx_pixel_put` | Used to draw rectangles, circles, and borders pixel by pixel. |
+| `Surface.set_at((x, y), color)` inside nested `for` loops (`MLXUtils.draw_rect`, `draw_circle`) | `mlx_pixel_put` | Used to draw rectangles, circles, pellets, and borders pixel by pixel. |
 | Bresenham's Line Algorithm via `set_at()` (`MLXUtils.draw_line`) | `mlx_pixel_put` | Replicates line drawing without native vector graphics. |
 | Geometric polygon fill via `set_at()` (`MLXUtils.draw_triangle`) | `mlx_pixel_put` | Replicates triangle drawing pixel by pixel. |
-<<<<<<< HEAD
+| Nearest-neighbor scaling via `set_at()` (`MLXUtils.scale_image`) | `mlx_pixel_put` / image buffer loop | Replicates image scaling using custom software interpolation. |
 | `Surface.get_at((x, y))` / `set_at` looping (`MLXUtils.colorize_icon`) | `mlx_get_data_addr` / memory buffer modification | Replicates pixel-level color blending and alpha manipulation without using `BLEND_RGB_ADD`. |
-| Basic `blit` operations | `mlx_put_image_to_window` | Standard 2D image drawing. |
-
-This strictly manual pixel-manipulation approach guarantees that the implementation is 100% compatible with the MLX standard.
-=======
 | Native Python `time.perf_counter()` | `<sys/time.h>` / `gettimeofday` | Replaces `pygame.time` to ensure time-management relies on standard OS libraries, not the graphical library. |
 | Basic `blit` operations | `mlx_put_image_to_window` | Standard 2D image drawing. |
->>>>>>> origin/MLX-Backend
 ---
 
 ## General Software Architecture
@@ -185,22 +196,9 @@ The software architecture completely decouples the backend state and logic from 
 
 ## Project Management
 
-<<<<<<< HEAD
-A dedicated directory containing evidence of our project management methodology (including timelines, tracking boards, risk analysis, and team organization) can be found in the [`project_management/`](./project_management/) folder.
-
-We utilized an Agile approach with the extensive application of GitHub features. 
-
-* **Team Organization:** The project was developed by two teammates. `vokatera` developed the front-end architecture and rendering systems, while `dporhomo` focused on the back-end logic, state machine, and entity AI.
-* **Branching Strategy:** We worked in separate feature branches, predominantly `Front-end-dev` and `Back-end-dev`. We gradually worked in our respective branches and pushed them to Git frequently.
-* **Pull Requests & Code Review:** Stable features were merged into the `main` branch solely through Pull Requests. This allowed us to validate changes, share our work, review progress in incremental steps, and ensure backup points.
-* **Task Tracking:** We used GitHub Issues as tickets to track bugs, assign specific feature modules, and monitor progress.
-* **Communication:** GitHub Discussions were leveraged to align on technical decisions alongside our daily coding check-ins.
-* **Timeline:** We allocated exactly 4 weeks to complete the full scope of this project, successfully fulfilling the initial plan.
-=======
 A dedicated directory containing evidence of our project management methodology (including timelines, tracking boards, risk analysis, and team organization) can be found in the [`project_mgt/`](./project_mgt/) folder.
 
-* **01_team_organization.md**: Details the front-end/back-end split between vokatera and dporhomo, and how you communicated (GitHub discussions, daily syncs).
->>>>>>> origin/MLX-Backend
+* **01_team_organization.md**: Details the front-end/back-end split between vokotera and dporhomo, and how you communicated (GitHub discussions, daily syncs).
 
 * **02_timeline_and_progress.md**: A retro-fitted 4-week timeline based on your closed GitHub issues. Week 1: Setup/Makefile. Week 2: Logic/Grid/Maze. Week 3: Front-end rendering/UI. Week 4: Bug fixing/MLX compliance.
 
@@ -214,7 +212,7 @@ A dedicated directory containing evidence of our project management methodology 
 ### Overview
 We utilized an Agile approach with the extensive application of GitHub features.
 
-* **Team Organization:** The project was developed by two teammates. `vokatera` developed the front-end architecture and MLX-compliant rendering systems, while `dporhomo` focused on the back-end logic, state machine, physics, and entity AI.
+* **Team Organization:** The project was developed by two teammates. `vokotera` developed the front-end architecture and MLX-compliant rendering systems, while `dporhomo` focused on the back-end logic, state machine, physics, and entity AI.
 * **Branching Strategy:** We worked in separate feature branches, predominantly `Front-end-dev` and `Back-end-dev`. We gradually worked in our respective branches and pushed them to Git frequently.
 * **Pull Requests & Code Review:** Stable features were merged into the `main` branch solely through Pull Requests. This allowed us to validate changes, share our work, review progress in incremental steps, and ensure backup points.
 * **Task Tracking:** We used GitHub Issues as tickets to track bugs, assign specific feature modules, and monitor progress across a 4-week lifecycle.

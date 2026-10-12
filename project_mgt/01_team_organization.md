@@ -7,7 +7,7 @@ The team 'Ghost Runners', consisting of two teammates, namely dporhomo and vokat
 | Team member | Main responsibility | Scope |
 |---|---|---|
 | `dporhomo` | Project Management and Back-end with game logic | Player and ghost logic, maze loading, game state, scoring, configuration, difficulty, timers, and gameplay rules |
-| `vokatera` | Front-end and rendering | UI, menu, HUD, renderer, audio, and visual integration |
+| `vokotera` | Front-end and rendering | UI, menu, HUD, renderer, audio, and visual integration |
 | Both | Shared integration and delivery | Shared entry point (`pac_man.py`), README, cross-component integration, bug fixing, and evaluation preparation |
 
 These were the primary areas of ownership, not isolated silos. Shared files and integration points required coordination and review by both team members.
