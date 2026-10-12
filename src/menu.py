@@ -12,8 +12,8 @@ class Menu:
     """Manages the main menu screens, submenus, and start-up animations."""
 
     def __init__(self, screen: pygame.Surface,
-                 pacgums_power: int,
-                 super_pacgums_power: int) -> None:
+                 pacgums_power: int = 10,
+                 super_pacgums_power: int = 50) -> None:
         """Initialize the menu with rendering surfaces"""
 
         # 1. Basic variables and configuration
