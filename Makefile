@@ -44,7 +44,11 @@ BUILD_STAMP := .build_stamp
 
 build: $(BUILD_STAMP)
 
-$(BUILD_STAMP): $(VENV_STAMP) pac-man.py config.json HOW_TO_PLAY.txt
+# Dynamically track all files in src/ and assets/
+SRC_FILES := $(shell find src assets -type f 2>/dev/null)
+
+$(BUILD_STAMP): $(VENV_STAMP) pac-man.py config.json HOW_TO_PLAY.txt \
+				$(SRC_FILES)
 	@echo "Installing PyInstaller..."
 	./$(VENV_DIR)/bin/$(PIP) install pyinstaller
 	@echo "Building the standalone executable..."

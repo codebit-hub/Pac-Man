@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by dporhomo, vokatera.*
+*This project has been created as part of the 42 curriculum by dporhomo, vokotera.*
 
 # Pac-Man
 
@@ -50,13 +50,12 @@ If you wish to compile the standalone package yourself from the source code:
 2. Run the build command from the root of the repository:
 ```bash
 make build
-
 ```
 
 
 3. The resulting standalone game directory will be placed in `dist/pac-man/`. You can zip this folder to distribute it.
 
-### How to Download and Play the Pre-Compiled Build (Evaluators)
+### How to Download and Play the Pre-Compiled Build
 
 A pre-compiled Linux build has been uploaded as an unlisted, restricted project on Itch.io.
 
@@ -64,20 +63,23 @@ A pre-compiled Linux build has been uploaded as an unlisted, restricted project 
 2. **Download:** Click the "Download" button to save the `pac-man-linux.zip` file to your computer.
 3. **Extract:** Unzip the downloaded file:
 ```bash
-unzip pac-man-linux.zip -d pac-man-game
-
+unzip pac-man-final.zip -d pac-man-game
 ```
 
 
 4. **Launch:** Navigate into the extracted directory and run the standalone executable:
 ```bash
-cd pac-man-game
+cd pac-man-game/pac-man/
 ./pac-man
-
 ```
 
 
-*(Note: The executable automatically discovers the bundled `config.json` and assets; no command-line arguments are required).*
+*(Note: The executable automatically discovers the bundled `config.json` and assets; no command-line arguments are required.
+You can modify the _internal/config.json to change game behaviour and settings. Then run `./pac-man config.json`.).*
+
+#### 'How-to-Play' Instructions
+
+Alongside the executable in the extracted directory, you will find a 'HOW_TO_PLAY.txt' file that you can open for a quick reference on controls, scoring, and gameplay mechanics.
 
 ---
 
@@ -124,26 +126,77 @@ Mazes are generated dynamically using the `A-Maze-ing` package, orchestrated by 
 
 The backend is built around a central `Application` orchestrator that acts as a finite state machine (`MENU`, `PLAYING`, `PAUSE`, `NAME_INPUT`, `HIGHSCORES`).
 
-**Front-End Features & Trade-Offs:**
-* **Retro UI & Animations:** The front-end renders a fully responsive grid matching the configuration file. It features animated menus, animated entity sprites using a spritesheet, and a persistent bottom HUD (Score, Lives, Level, Timer).
-* **Trade-offs:** We actively traded Pygame's hardware-accelerated shape rendering (`pygame.draw`) for custom software-rendering loops (`MLXUtils`) to strictly comply with the MLX requirement. While this introduces a CPU bottleneck, it guarantees algorithmic authenticity. 
+### Front-End Features & Trade-Offs:
+* **Strict MLX Software Rendering vs. Hardware Acceleration (CPU Bottleneck):**
+  * *Constraint:* The 42 subject mandates that *every graphical library function used must have a direct equivalent in the MiniLibX (MLX) library (`mlx.h`)*. High-level Pygame drawing primitives (`pygame.draw.rect`, `pygame.draw.circle`, `pygame.draw.line`, `pygame.draw.polygon`) have no equivalent in MLX, which only provides single-pixel manipulation (`mlx_pixel_put`) and direct image blitting (`mlx_put_image_to_window`).
+  * *Trade-off & Solution:* We completely eliminated `pygame.draw` and implemented a dedicated `MLXUtils` class. All geometry is drawn via custom software loops using `Surface.set_at((x, y), color)`:
+    * Rectangles & Walls (`MLXUtils.draw_rect`): Nested loops with strict boundary clipping (`min`, `max`) against window boundaries.
+    * Dots & Pellets (`MLXUtils.draw_circle`): Bounding-box iteration evaluating the Pythagorean circle equation ($x^2 + y^2 \le r^2$).
+    * Lines (`MLXUtils.draw_line`): Integer-only Bresenham's line algorithm with configurable width offset.
+    * Triangles & Pointers (`MLXUtils.draw_triangle`): Bounding-box reduction with half-plane 2D cross-product edge tests (`sign()`).
+  * *Compromise:* Executing pixel math in Python bytecode introduces an inherent CPU bottleneck. While modern GPUs handle geometric primitives virtually for free, our pure CPU approach strictly guarantees algorithmic authenticity and 100% compliance with 42 curriculum standards.
 
-**Fixed Timestep & Collision Consistency:**
-The CPU-heavy pixel-by-pixel rendering inherently introduces artificial frame lag. Using a standard frame-independent `delta_time` caused high-speed entities to teleport across multiple tiles in a single frame, phasing through pacgums and missing collisions. To guarantee exact logic execution at any dynamic speed (from 0 to 10 in evaluation mode), the engine implements a **Fixed Timestep with an Accumulator**. This architecture completely decouples the physical rendering loop from the backend physics loop. It accumulates real-world frame lag and processes the game logic in strict 0.016-second micro-steps before drawing to the screen. This ensures 100% collision accuracy and consistent rendering behavior.
+* **Asset Scaling Strategy: Eager Caching vs. Real-Time Nearest-Neighbor:**
+  * *Constraint:* MLX lacks an image-scaling routine (such as `pygame.transform.scale`).
+  * *Trade-off & Solution:* We authored `MLXUtils.scale_image` using manual nearest-neighbor interpolation (`src_x = min(int(dst_x * src_w / new_w), src_w - 1)`). However, running this software loop per frame for dozens of animated sprites would drop framerates below playable thresholds.
+  * *Compromise:* We implemented an **eager asset caching architecture**. All spritesheets, player animations, ghost direction frames, and UI icons are scaled once via `MLXUtils` at grid initialization and cached in memory. Runtime frames exclusively use basic blit operations (`mlx_put_image_to_window` equivalent), preserving both MLX mathematical compliance and a rock-solid 60 FPS.
+
+* **Color Modulation & UI Feedback (`colorize_icon` vs. SDL Blend Flags):**
+  * *Constraint:* Hardware blend modes (e.g. `pygame.BLEND_RGB_ADD`) do not exist in MLX.
+  * *Trade-off & Solution:* In `MLXUtils.colorize_icon`, button hover highlights, menu selections, and entity flashing are implemented by directly inspecting raw surface pixel RGBA channels, ignoring transparent pixels (`a > 0`), and arithmetically shifting RGB values with explicit 8-bit clamping (`min(255, val + add)`). This replicates direct memory buffer manipulation (`mlx_get_data_addr`).
+
+* **Dynamic Window Geometry vs. Fixed-Aspect Retro Tile Grid:**
+  * *Constraint:* The game dynamically loads levels with variable grid dimensions (e.g., 15×15 up to 30×30 cells, expanded to $(2W + 1) \times (2H + 1)$ by the maze algorithm).
+  * *Trade-off & Solution:* Rather than stretching sprites or letterboxing with uneven borders, the window dynamically sizes itself to the exact grid width and height (`tile_size = 24px`), appending a standardized vertical offset for the telemetry HUD. This ensures crisp pixel art without non-uniform scaling or visual distortion.
+
+* **Decoupled Simulation: Fixed Timestep Accumulator:**
+  * *Constraint:* CPU-heavy software rendering creates timing variance. Under standard variable `delta_time`, moving at high speeds or suffering a CPU spike caused Pac-Man to jump multiple tiles in a single frame, skipping pellets (the "tunneling" bug).
+  * *Trade-off & Solution:* Front-end rendering is completely decoupled from physics simulation via a **Fixed Timestep Accumulator** (`FIXED_DT = 0.016s`). Render lag never influences collision detection or gameplay fairness.
+
+* **Audio System Graceful Degradation:**
+  * *Constraint:* 42 evaluation environments (headless clusters, SSH tunnels, WSL, VMs without audio sinks) often crash when initializing sound cards.
+  * *Trade-off & Solution:* The `AudioManager` wraps all mixer initialization and playback in safe exception guards. If sound hardware is missing or fails, the game falls back silently to a no-op state without crashing, while still exposing in-game mute options in the pause menu.
+
+* **HUD Telemetry & Evaluation Feedback:**
+  * The persistent bottom HUD tracks Level, Score, Lives, and remaining Level Time. In `"evaluation"` mode, it dynamically displays real-time ghost wave states (`MODE: SCATTER / CHASE / FLEE`), giving evaluators direct visual verification of the underlying state machine.
 
 **MLX Library Compliance:**
-The project was explicitly designed to comply with the constraint that *any graphical library function used must have a direct equivalent in the MiniLibX (MLX) library*. Because Pygame's built-in drawing primitives (like `pygame.draw.rect` or `pygame.draw.circle`) have no equivalent in MLX (which only provides pixel rendering), we implemented a custom `MLXUtils` class. All shapes and image processing were achieved using manual pixel-by-pixel loops.
+The project was explicitly designed to comply with the constraint that *any graphical library function used must have a direct equivalent in the MiniLibX (MLX) library*. Because Pygame's built-in drawing primitives have no equivalent in MLX (which only provides pixel rendering), we implemented a custom `MLXUtils` class. Furthermore, standard Pygame timing functions (`pygame.time.Clock`, `get_ticks()`) were entirely stripped from the backend and replaced with Python's native `time.perf_counter()` to strictly mirror standard C-library time management.
 
 | Game Implementation (Python/Pygame) | MLX Equivalent (`mlx.h`) | Description |
 |-------------------------------------|--------------------------|-------------|
-| `Surface.set_at((x, y), color)` inside nested `for` loops (`MLXUtils.draw_rect`, `draw_circle`) | `mlx_pixel_put` | Used to draw rectangles, circles, and borders pixel by pixel. |
+| `Surface.set_at((x, y), color)` inside nested `for` loops (`MLXUtils.draw_rect`, `draw_circle`) | `mlx_pixel_put` | Used to draw rectangles, circles, pellets, and borders pixel by pixel. |
 | Bresenham's Line Algorithm via `set_at()` (`MLXUtils.draw_line`) | `mlx_pixel_put` | Replicates line drawing without native vector graphics. |
 | Geometric polygon fill via `set_at()` (`MLXUtils.draw_triangle`) | `mlx_pixel_put` | Replicates triangle drawing pixel by pixel. |
+| Nearest-neighbor scaling via `set_at()` (`MLXUtils.scale_image`) | `mlx_pixel_put` / image buffer loop | Replicates image scaling using custom software interpolation. |
 | `Surface.get_at((x, y))` / `set_at` looping (`MLXUtils.colorize_icon`) | `mlx_get_data_addr` / memory buffer modification | Replicates pixel-level color blending and alpha manipulation without using `BLEND_RGB_ADD`. |
+| Native Python `time.perf_counter()` | `<sys/time.h>` / `gettimeofday` | Replaces `pygame.time` to ensure time-management relies on standard OS libraries, not the graphical library. |
 | Basic `blit` operations | `mlx_put_image_to_window` | Standard 2D image drawing. |
 
-This strictly manual pixel-manipulation approach guarantees that the implementation is 100% compatible with the MLX standard.
+
+### Back-End Features & Trade-Offs:
+* **Robust Configuration Parsing & Graceful Fallbacks:**
+  * *Constraint:* The game must not crash due to user error in the configuration file, such as missing files, bad types, or corrupted data.
+  * *Trade-off & Solution:* We implemented a highly defensive `ConfigManager`. Instead of simply crashing when `config.json` is missing, the script catches the `FileNotFoundError` and seamlessly boots using a hardcoded `_defaults` dictionary. We also bypassed standard Python JSON parsing limitations by injecting a custom `object_pairs_hook` into `json.loads()`. This intercepts duplicate JSON keys during the read phase and safely clamps them to predefined default values, preventing silent configuration overwrites.
+
+* **Decoupled State Machine Architecture:**
+  * *Implementation:* The game flow is managed by a central `Application` class acting as a finite state machine (`MENU`, `PLAYING`, `PAUSE`, `NAME_INPUT`, `HIGHSCORES`). The backend logic (`GameState`) handles all entity updates, wave timers, and score aggregation completely independently of the front-end graphics, ensuring that UI lag never impacts the underlying game math.
+
+* **Authentic Ghost AI & Time Management:**
+  * *Implementation:* The backend replicates canonical arcade AI waves (Scatter, Chase, and Flee modes). To maintain strict MLX compliance, all backend timing loops and wave transitions are driven by standard OS-level libraries (`time.perf_counter()`) rather than graphical library clock ticks.
+
+* **Deterministic vs. Procedural Maze Generation:**
+  * *Implementation:* The backend wraps the external `A-Maze-ing` package via `MazeLoader`.
+  * *Trade-off & Solution:* To satisfy the need for both predictable evaluation and replayability, the logic explicitly feeds the configuration `seed` (default: 42) into Level 1 to guarantee a deterministic layout. For all subsequent levels, the backend drops the seed and utilizes `random.randint`, ensuring infinite procedural generation while dynamically calculating valid pacgum capacities and safe entity spawn coordinates (e.g., placing Pinky precisely in the top-left corner).
+
+* **Evaluation "Cheat" Mode Isolation:**
+  * *Implementation:* To aid peers during the 42 evaluation process without compromising the integrity of the base game, we introduced a strict `game_mode` toggle in the config. Setting this to `"evaluation"` unlocks a developer pause menu that allows real-time dynamic speed scaling, invincibility toggles, and instant level skipping.
+
+* **Lightweight Persistence (JSON vs. Databases):**
+  * *Trade-off & Solution:* For the top-10 leaderboard, we traded the robustness of a relational database (like SQLite) for a lightweight `highscore.json` implementation. This removes heavy dependencies and keeps the save file human-readable. To mitigate the risk of file injection, the backend aggressively validates leaderboard reads and utilizes strict Regex sanitization on player names (clamping to 10 alphanumeric characters) before writing to the disk.
+
 ---
+
 
 ## General Software Architecture
 
@@ -168,17 +221,25 @@ The software architecture completely decouples the backend state and logic from 
 
 ## Project Management
 
-A dedicated directory containing evidence of our project management methodology (including timelines, tracking boards, risk analysis, and team organization) can be found in the [`project_management/`](./project_management/) folder.
+We utilized an Agile approach with the extensive application of GitHub features.
 
-We utilized an Agile approach with the extensive application of GitHub features. 
-
-* **Team Organization:** The project was developed by two teammates. `vokatera` developed the front-end architecture and rendering systems, while `dporhomo` focused on the back-end logic, state machine, and entity AI.
+* **Team Organization:** The project was developed by two teammates. `vokotera` developed the front-end architecture and MLX-compliant rendering systems, while `dporhomo` focused on the back-end logic, state machine, physics, entity AI and overall project management.
 * **Branching Strategy:** We worked in separate feature branches, predominantly `Front-end-dev` and `Back-end-dev`. We gradually worked in our respective branches and pushed them to Git frequently.
 * **Pull Requests & Code Review:** Stable features were merged into the `main` branch solely through Pull Requests. This allowed us to validate changes, share our work, review progress in incremental steps, and ensure backup points.
-* **Task Tracking:** We used GitHub Issues as tickets to track bugs, assign specific feature modules, and monitor progress.
-* **Communication:** GitHub Discussions were leveraged to align on technical decisions alongside our daily coding check-ins.
-* **Timeline:** We allocated exactly 4 weeks to complete the full scope of this project, successfully fulfilling the initial plan.
+* **Task Tracking:** We used GitHub Issues as tickets to track bugs, assign specific feature modules, and monitor progress across a 4-week lifecycle.
+* **Timeline:** We allocated exactly 4 weeks to complete the full scope of this project. Core features were completed by Day 22, reserving the final 6 days strictly for evaluation prep, bug fixing, and compliance audits.
 
+A dedicated directory containing evidence of our project management methodology (including timelines, tracking boards, risk analysis, and team organization) can be found in the [`project_mgt/`](./project_mgt/01_team_organization.md) folder.
+
+* **01_team_organization.md**: Details the front-end/back-end split between vokotera and dporhomo, and how you communicated (GitHub discussions, daily syncs).
+
+* **02_timeline_and_progress.md**: A retro-fitted 4-week timeline based on your closed GitHub issues. Week 1: Setup/Makefile. Week 2: Logic/Grid/Maze. Week 3: Front-end rendering/UI. Week 4: Bug fixing/MLX compliance.
+
+* **03_risk_analysis.md**: Highlights the MLX CPU bottleneck risk, the tunneling bug, and the mitigation strategies (MLXUtils + Fixed Timestep).
+
+* **04_blocking_points.md**: Details the realization that pygame.time violated MLX rules and how it was surgically removed and replaced with standard Python time.
+
+* **05_acceptance_test_plan.md**: A checklist of the edge cases you tested (Evaluation mode speeds, JSON config corruption, level scaling).
 
 ---
 
@@ -208,5 +269,6 @@ We utilized an Agile approach with the extensive application of GitHub features.
 
 ### Legal Disclaimer
 
-The audio files and sound archives used in this project were obtained from publicly available sources that distribute archival or reference recordings free of charge. Their use in this project was limited to educational, non-commercial, and demonstrative purposes and was carried out in accordance with applicable copyright law and the terms of the corresponding source platforms. This project does not claim ownership of the original sound recordings; all rights remain with their respective copyright holders. We do not distribute the original audio files as standalone assets and do not use them for commercial gain.
+* **Disclaimer:** The audio files and sound archives used in this project were obtained from publicly available sources that distribute archival or reference recordings free of charge. Their use in this project was limited to educational, non-commercial, and demonstrative purposes and was carried out in accordance with applicable copyright law and the terms of the corresponding source platforms. This project does not claim ownership of the original sound recordings; all rights remain with their respective copyright holders. We do not distribute the original audio files as standalone assets and do not use them for commercial gain.
+
 ---

@@ -1,5 +1,6 @@
 import pygame
 import sys
+import os
 
 from ui_config import UIConfig
 from game_state import State
@@ -8,8 +9,20 @@ if TYPE_CHECKING:
     from main import Application
 
 
+# External package asset export absolute path building
+def get_asset_path(relative_path: str) -> str:
+    fallback = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), ".."))
+    base_path = getattr(sys, "_MEIPASS", fallback)
+    return os.path.join(base_path, relative_path)
+
+
 class PauseMenu:
+    """Manages the in-game pause screen overlay"""
+
     def __init__(self, screen: pygame.Surface) -> None:
+        """Initialize the pause menu with the main display surface."""
+
         self.screen = screen
         self.ui = UIConfig()
 
@@ -18,6 +31,7 @@ class PauseMenu:
 
     def run(self, app: "Application") -> None:
         """Draw and handle pause screen waiting for keypress."""
+
         mute_label = f"MUTE SOUND: < {'ON' if app.audio.muted else 'OFF'} >"
         if app.is_eval:
             labels = [
@@ -37,7 +51,7 @@ class PauseMenu:
             ]
             separator_idx = 3
         else:
-            labels = ["Resume Game", "Return to main menu", mute_label]
+            labels = ["RESUME GAME", "RETURN TO MAIN MENU", mute_label]
             separator_idx = -1
 
         for ev in pygame.event.get():
@@ -142,6 +156,8 @@ class PauseMenu:
         app.render.render_frame()
 
     def draw_overlay(self, labels: list[str], separator_idx: int) -> None:
+        """Draws the dark translucent overlay, title, and menu items."""
+
         width, height = self.screen.get_width(), self.screen.get_height()
         overlay = pygame.Surface((width, height), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 210))
@@ -151,8 +167,9 @@ class PauseMenu:
         cy = self.screen.get_height() // 2
 
         try:
-            surf = pygame.image.load("./assets/pause-icon.png")
-            # If the user wants scaling like in ready-photo, we can apply it here
+            img_path = get_asset_path(
+                os.path.join("assets", "others", "pause-icon.png"))
+            surf = pygame.image.load(img_path)
             from renderer import MLXUtils
             title = MLXUtils.scale_image(surf, 200, 200)
         except (FileNotFoundError, pygame.error, ImportError):
@@ -168,7 +185,8 @@ class PauseMenu:
         for i, label in enumerate(labels):
             if i == separator_idx:
                 if i == 3:
-                    sep_surf = pause_text.render(label, True, self.ui.C_TEXT_YELLOW)
+                    c = self.ui.C_TEXT_YELLOW
+                    sep_surf = pause_text.render(label, True, c)
                 else:
                     sep_surf = pause_text.render(label, True, color)
                 y_pos = start_y + (i * 35)
@@ -192,6 +210,8 @@ class PauseMenu:
             self.screen.blit(surf, rect)
 
     def _execute_pause_action(self, app: "Application") -> None:
+        """Executes the action corresponding to the currently selected menu"""
+
         if self.selected_item == 0:
             app.app_state = "PLAYING"
             app.audio.stop_bgm()
@@ -209,6 +229,8 @@ class PauseMenu:
                 self._reset_cheats_to_defaults(app)
 
     def _adjust_cheat_value(self, app: "Application", key: int) -> None:
+        """Adjusts the value of the selected cheat settings"""
+
         idx = self.selected_item
         if idx == 2:
             app.audio.toggle_mute()
@@ -246,6 +268,8 @@ class PauseMenu:
             app.game_state.lives = max(1, app.game_state.lives + lives_diff)
 
     def _reset_cheats_to_defaults(self, app: "Application") -> None:
+        """Resets all player and ghost speeds, and invincibility to defaults"""
+
         app.invincible = False
         app.custom_player_speed = None
         app.custom_ghost_speeds.clear()
