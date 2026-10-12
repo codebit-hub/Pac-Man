@@ -1,11 +1,20 @@
 import pygame
 import sys
+import os
 
 from ui_config import UIConfig
 from game_state import State
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from main import Application
+
+
+# External package asset export absolute path building
+def get_asset_path(relative_path: str) -> str:
+    fallback = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), ".."))
+    base_path = getattr(sys, "_MEIPASS", fallback)
+    return os.path.join(base_path, relative_path)
 
 
 class PauseMenu:
@@ -158,7 +167,9 @@ class PauseMenu:
         cy = self.screen.get_height() // 2
 
         try:
-            surf = pygame.image.load("./assets/others/pause-icon.png")
+            img_path = get_asset_path(
+                os.path.join("assets", "others", "pause-icon.png"))
+            surf = pygame.image.load(img_path)
             from renderer import MLXUtils
             title = MLXUtils.scale_image(surf, 200, 200)
         except (FileNotFoundError, pygame.error, ImportError):

@@ -1,5 +1,6 @@
 import pygame
 import os
+import sys
 import math
 import time
 from typing import Optional
@@ -7,6 +8,14 @@ from typing import Optional
 from maze_loader import MazeLoader
 from player import Player, Direction
 from ui_config import UIConfig
+
+
+# External package asset export absolute path building
+def get_asset_path(relative_path: str) -> str:
+    fallback = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), ".."))
+    base_path = getattr(sys, "_MEIPASS", fallback)
+    return os.path.join(base_path, relative_path)
 
 
 class MLXUtils:
@@ -527,9 +536,11 @@ class Render:
 
         try:
             if is_victory:
-                img_path = "./assets/others/victory-msg.png"
+                img_path = get_asset_path(
+                    os.path.join("assets", "others", "victory-msg.png"))
             else:
-                img_path = "./assets/others/gameover-msg.png"
+                img_path = get_asset_path(
+                    os.path.join("assets", "others", "gameover-msg.png"))
             title = pygame.image.load(img_path)
         except (FileNotFoundError, pygame.error):
             msg = "VICTORY!" if is_victory else "GAME OVER"
@@ -560,7 +571,7 @@ if __name__ == "__main__":
     # Generate maze first so we know the real grid dimensions
     if not loader.generate(width=15, height=18, seed=42, pacgum_count=42):
         print("Error: Could not generate maze")
-        import sys
+        # import sys
         sys.exit(1)
     grid = loader.get_grid()
     grid_width = len(grid[0])

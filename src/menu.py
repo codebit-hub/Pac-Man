@@ -43,18 +43,19 @@ class Menu:
         base_dir = getattr(
             sys, '_MEIPASS', os.path.join(
                 os.path.dirname(__file__), ".."))
-        assets = os.path.normpath(os.path.join(base_dir, "assets"))
+        self.assets_dir = os.path.normpath(
+            os.path.join(base_dir, "assets"))
 
         # -- Loading of files --
 
         # Spritesheet
         sheet_path = os.path.join(
-            assets, "spritesheets", "main-spritesheet.png"
+            self.assets_dir, "spritesheets", "main-spritesheet.png"
         )
         self.renderer.load_spritesheet(sheet_path)
 
         # Icon for mute sounds
-        mute_path = os.path.join(assets, "others", "volume-mute.png")
+        mute_path = os.path.join(self.assets_dir, "others", "volume-mute.png")
         try:
             img = pygame.image.load(mute_path).convert_alpha()
             self._mute_icon = MLXUtils.scale_image(img, 32, 32)
@@ -105,7 +106,9 @@ class Menu:
 
             # 1. Draw Title
             try:
-                img = pygame.image.load("./assets/menu-nav/pac-man-logo.png")
+                img_path = os.path.join(
+                    self.assets_dir, "menu-nav", "pac-man-logo.png")
+                img = pygame.image.load(img_path)
                 self.screen.blit(img, img.get_rect(center=(cx, cy - 200)))
             except (FileNotFoundError, pygame.error):
                 print("Couldn't load PACMAN title, loading default text..")
@@ -115,7 +118,9 @@ class Menu:
                 self.screen.blit(title, rect)
 
             try:
-                img = pygame.image.load("./assets/menu-nav/push-space.png")
+                img_path = os.path.join(
+                    self.assets_dir, "menu-nav", "push-space.png")
+                img = pygame.image.load(img_path)
                 self.screen.blit(img, img.get_rect(center=(cx - 5, cy - 100)))
             except (FileNotFoundError, pygame.error):
                 pass
@@ -131,7 +136,9 @@ class Menu:
             for i, (normal_img, hover_img) in enumerate(menu_items):
                 img_name = hover_img if i == self.selected_item else normal_img
                 try:
-                    surf = pygame.image.load(f"./assets/menu-nav/{img_name}")
+                    img_path = os.path.join(
+                        self.assets_dir, "menu-nav", img_name)
+                    surf = pygame.image.load(img_path)
                 except (FileNotFoundError, pygame.error):
                     labels = ["View Highscores", "Instructions", "Exit"]
                     c = (self.ui.C_TEXT_PURPLE if i == self.selected_item
@@ -145,7 +152,8 @@ class Menu:
             # 3. Draw Top 4 Highscores
             if top_scores:
                 try:
-                    img_path = "./assets/menu-nav/highscores.png"
+                    img_path = os.path.join(
+                        self.assets_dir, "menu-nav", "highscores.png")
                     top_scores_img = pygame.image.load(img_path)
                     rect = top_scores_img.get_rect(center=(cx, cy + 120))
                     self.screen.blit(top_scores_img, rect)
@@ -291,7 +299,9 @@ class Menu:
 
             # Pulsing ESC hint
             try:
-                ret_img = pygame.image.load("./assets/return-instuctions.png")
+                img_path = os.path.join(
+                    self.assets_dir, "others", "return-instuctions.png")
+                ret_img = pygame.image.load(img_path)
                 rect = ret_img.get_rect(center=(cx, bg_rect.bottom + 50))
                 self.screen.blit(ret_img, rect)
             except (FileNotFoundError, pygame.error):

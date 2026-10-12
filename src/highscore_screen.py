@@ -1,9 +1,18 @@
 import pygame
 import sys
+import os
 from typing import Any
 from ui_config import UIConfig
 
 from highscore import HighScoreManager
+
+
+# External package asset export absolute path building
+def get_asset_path(relative_path: str) -> str:
+    fallback = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), ".."))
+    base_path = getattr(sys, "_MEIPASS", fallback)
+    return os.path.join(base_path, relative_path)
 
 
 class Highscorescreen:
@@ -68,7 +77,8 @@ class Highscorescreen:
             self.screen.blit(score_txt, score_rect)
 
         try:
-            img_path = "./assets/others/return-instuctions.png"
+            img_path = get_asset_path(
+                os.path.join("assets", "others", "return-instuctions.png"))
             ret_img = pygame.image.load(img_path)
             rect = ret_img.get_rect(center=(cx, bg_rect.bottom + 50))
             self.screen.blit(ret_img, rect)

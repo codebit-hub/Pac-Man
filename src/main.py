@@ -22,6 +22,14 @@ from pause_menu import PauseMenu
 from ui_config import UIConfig
 
 
+# External package asset export absolute path building
+def get_asset_path(relative_path: str) -> str:
+    fallback = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), ".."))
+    base_path = getattr(sys, "_MEIPASS", fallback)
+    return os.path.join(base_path, relative_path)
+
+
 class Application:
     """Central app controller managing states and transitions."""
 
@@ -559,7 +567,9 @@ class Application:
 
         if self.intro_timer > 0:
             try:
-                surf = pygame.image.load("./assets/ready-photo.png")
+                img_path = get_asset_path(
+                    os.path.join("assets", "ready-photo.png"))
+                surf = pygame.image.load(img_path)
                 ready_surf = MLXUtils.scale_image(surf, 200, 200)
             except (FileNotFoundError, pygame.error):
                 c = self.ui.C_TEXT_YELLOW
