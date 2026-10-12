@@ -55,7 +55,7 @@ make build
 
 3. The resulting standalone game directory will be placed in `dist/pac-man/`. You can zip this folder to distribute it.
 
-### How to Download and Play the Pre-Compiled Build (Evaluators)
+### How to Download and Play the Pre-Compiled Build
 
 A pre-compiled Linux build has been uploaded as an unlisted, restricted project on Itch.io.
 
@@ -63,18 +63,19 @@ A pre-compiled Linux build has been uploaded as an unlisted, restricted project 
 2. **Download:** Click the "Download" button to save the `pac-man-linux.zip` file to your computer.
 3. **Extract:** Unzip the downloaded file:
 ```bash
-unzip pac-man-linux.zip -d pac-man-game
+unzip pac-man-final.zip -d pac-man-game
 ```
 
 
 4. **Launch:** Navigate into the extracted directory and run the standalone executable:
 ```bash
-cd pac-man-game
+cd pac-man-game/pac-man/
 ./pac-man
 ```
 
 
-*(Note: The executable automatically discovers the bundled `config.json` and assets; no command-line arguments are required).*
+*(Note: The executable automatically discovers the bundled `config.json` and assets; no command-line arguments are required.
+You can modify the _internal/config.json to change game behaviour and settings. Then run `./pac-man config.json`.).*
 
 #### 'How-to-Play' Instructions
 

@@ -58,7 +58,10 @@ class Application:
         # 4. Window and menu
         self.highscore_screen = Highscorescreen(self.screen, self.highscores)
         self.pause_menu_screen = PauseMenu(self.screen)
-        self.menu = Menu(self.screen)
+        self.menu = Menu(
+            self.screen,
+            self.config.get("points_per_pacgum"),
+            self.config.get("points_per_super_pacgum"))
 
         # 5. State variables
         self.app_state = "MENU"  # MENU, PLAYING, GAME_OVER, HIGHSCORES

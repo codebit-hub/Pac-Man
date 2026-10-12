@@ -12,9 +12,8 @@ class Menu:
     """Manages the main menu screens, submenus, and start-up animations."""
 
     def __init__(self, screen: pygame.Surface,
-                 pacgums_power: int = 10,
-                 super_pacgums_power: int = 50,
-                 pacgums_nb: int = 4) -> None:
+                 pacgums_power: int,
+                 super_pacgums_power: int) -> None:
         """Initialize the menu with rendering surfaces"""
 
         # 1. Basic variables and configuration
@@ -25,7 +24,6 @@ class Menu:
 
         self.pacgums_power = pacgums_power
         self.super_pacgums_power = super_pacgums_power
-        self.pacgums_nb = pacgums_nb
 
         # 2. UI and drawing
         self.ui = UIConfig()
@@ -247,9 +245,11 @@ class Menu:
             y_pos = bg_rect.top + 170
             self.ui.draw_bullet(self.screen, bg_rect.left + 20, y_pos)
             nb_txt = self.ui.font_regular.render(
-                f"{self.pacgums_nb}", True, white)
-            pt_txt = "FLASHING SUPER PACGUMS SCORE "
-            f"{self.super_pacgums_power} POINTS"
+                "4", True, white)
+            pt_txt = (
+                "FLASHING SUPER PACGUMS SCORE "
+                f"{self.super_pacgums_power} POINTS"
+            )
             pwr_txt = self.ui.font_regular.render(pt_txt, True, white)
             rect = nb_txt.get_rect(topleft=(bg_rect.left + 30, y_pos + 10))
             self.screen.blit(nb_txt, rect)

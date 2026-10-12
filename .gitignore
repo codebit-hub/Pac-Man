@@ -1,7 +1,6 @@
 # Custom files
 .install_stamp
 highscore.json
-config.json
 build/
 dist/
 

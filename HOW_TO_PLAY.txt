@@ -8,14 +8,39 @@ Open your terminal in this directory and run:
 
 CONTROLS:
 - W, A, S, D or Arrow Keys : Move Pac-Man
-- ESC / P / Space : Pause the game
-- M : Mute/Unmute audio
+- ESC / P / Space          : Pause the game / Open Pause Menu
+- M                        : Mute/Unmute audio
+- Enter / Return           : Select menu items / Submit Highscore name
+- Backspace                : Delete characters in Highscore name input
+
+GAMEPLAY MECHANICS:
+- Objective: Eat all the small dots (Pacgums) in the maze to advance to the next level.
+- Ghosts: Avoid the four ghosts (Blinky, Pinky, Inky, Clyde). If they touch you, you lose a life.
+- Super Pacgums: Eating a large, flashing Super Pacgum temporarily turns the ghosts blue (Flee mode). You can eat blue ghosts for bonus points!
+- Time Limit: Clear the maze before the level timer reaches zero, or you will lose a life.
 
 CONFIGURATION (config.json):
-You can edit the 'config.json' file to modify game settings:
-- "lives": Number of lives you start with.
-- "level_max_time": Time limit per level in seconds.
-- "seed": The seed for the first level maze generation.
+The game is highly customizable. You can safely edit the 'config.json' file to modify game settings. The configuration parser supports inline comments starting with '#' or '//'.
 
-EVALUATION CHEATS (in Pause Menu):
-- Toggle Invincibility, Skip levels, freeze ghosts...
+Acceptable modification parameters:
+- "game_mode"             : Set to "game" for standard play or "evaluation" to enable cheats.
+- "highscore_filename"    : The name of the save file. Must not exceed 100 characters.
+- "levels"                : Total number of levels to win the game. Valid range: 1 to 100.
+- "level"                 : Array specifying maze dimensions (e.g., [{"width": 15, "height": 15}]). Accepted range per axis is 15 to 30. Defaults to 15x15 if invalid.
+- "lives"                 : Number of starting lives. Maximum limit is 100.
+- "pacgum"                : Target number of pacgums to spawn. Automatically limited to the maximum available empty corridors in the generated maze.
+- "points_per_pacgum"     : Points awarded per standard dot. Range: 0 to 1000.
+- "points_per_super_pacgum": Points awarded per power pellet. Range: 0 to 1000.
+- "points_per_ghost"      : Points awarded for eating a frightened ghost. Range: 0 to 1000.
+- "seed"                  : Integer seed for maze generation. Level 1 is fixed to this seed; subsequent levels are entirely random.
+- "level_max_time"        : Time limit per level in seconds. Must be greater than 0.
+- "ghost_behavior_random" : Boolean (true/false). If true, randomizes ghost spawn locations and visual colors.
+
+EVALUATION CHEATS (Requires "game_mode": "evaluation"):
+When running in evaluation mode, pressing Pause opens a special developer menu allowing you to:
+- Toggle Invincibility (ghosts and time limits cannot kill you).
+- Skip to the next or previous level instantly.
+- Dynamically adjust Pac-Man's movement speed (0.0 to 10.0).
+- Dynamically adjust individual Ghost movement speeds (0.0 to 10.0).
+- Add or remove extra lives on the fly.
+- Reset all speeds and cheats back to standard defaults.

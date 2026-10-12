@@ -1,5 +1,6 @@
 """
 Manage all ghost bahaviour and modes.
+Provides ghost AI.
 Uses Manhatten distance for distance calculation
 Blinky chases Pac-man directly.
 Pinky chases target cell 4 cells ahead of Pac-man.
