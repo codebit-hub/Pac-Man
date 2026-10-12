@@ -38,12 +38,14 @@ def main() -> None:
     config_file = get_resource_path(config_arg)
 
     if not os.path.isfile(config_file):
-        print(f"Error: Configuration file '{config_file}' not found.")
-        sys.exit(1)
+        print(f"Error: Configuration file '{config_file}' not found. "
+              "Clamping.")
+        # sys.exit(1)
 
     if not config_file.lower().endswith(".json"):
-        print("Error: Configuration file must have .json extension.")
-        sys.exit(1)
+        print("Error: Configuration file must have .json extension. "
+              "Clamping.")
+        # sys.exit(1)
 
     try:
         app = Application(config_file)
