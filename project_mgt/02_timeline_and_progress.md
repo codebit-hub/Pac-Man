@@ -113,6 +113,7 @@ Issues:
 **Completed**
 [Pull Request #22](https://github.com/codebit-hub/Pac-Man/pull/22),
 [Pull Request #30](https://github.com/codebit-hub/Pac-Man/pull/30)
+[Pull Request #30](https://github.com/codebit-hub/Pac-Man/pull/31)
 
 ## 3. Milestones
 
