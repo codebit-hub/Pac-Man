@@ -121,3 +121,6 @@ The project is ready for evaluation when:
 | Blocked | 0 |
 | Not run | 0 |
 | Critical unresolved defects | 0 |
+
+---
+**⬅ Previous:** [Blocking Points](./04_blocking_points.md) | **🏠 Back to:** [Main README](../README.md)

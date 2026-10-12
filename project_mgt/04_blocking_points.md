@@ -109,3 +109,6 @@ This snippet illustrates the timing pattern; adapt it to the actual project loop
 - Collision tests need to consider the path travelled between updates, especially for small targets and high speeds.
 - Compliance constraints should be checked early, because replacing a timing mechanism late can affect the whole game loop.
 - After a low-level timing change, regression testing should cover movement, collisions, level transitions, timers, and game-over behavior.
+
+---
+**⬅ Previous:** [Risk Analysis](./03_risk_analysis.md) | **Next:** [Acceptance Test Plan ➔](./05_acceptance_test_plan.md)

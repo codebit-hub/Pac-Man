@@ -65,3 +65,6 @@ A task was considered ready to close when applicable conditions were met:
 ## 5. Delivery outcome
 
 The implementation was completed in 22 days of the four-week schedule, leaving six days for evaluation preparation. The final scope included the back-end game systems, front-end UI and rendering, shared project files, difficulty and level behavior, a cheat mode, and high-score name specification.
+
+---
+**Next:** [Timeline and Progress ➔](./02_timeline_and_progress.md)

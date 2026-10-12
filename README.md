@@ -125,7 +125,7 @@ Mazes are generated dynamically using the `A-Maze-ing` package, orchestrated by 
 
 The backend is built around a central `Application` orchestrator that acts as a finite state machine (`MENU`, `PLAYING`, `PAUSE`, `NAME_INPUT`, `HIGHSCORES`).
 
-**Front-End Features & Trade-Offs:**
+### Front-End Features & Trade-Offs:
 * **Strict MLX Software Rendering vs. Hardware Acceleration (CPU Bottleneck):**
   * *Constraint:* The 42 subject mandates that *every graphical library function used must have a direct equivalent in the MiniLibX (MLX) library (`mlx.h`)*. High-level Pygame drawing primitives (`pygame.draw.rect`, `pygame.draw.circle`, `pygame.draw.line`, `pygame.draw.polygon`) have no equivalent in MLX, which only provides single-pixel manipulation (`mlx_pixel_put`) and direct image blitting (`mlx_put_image_to_window`).
   * *Trade-off & Solution:* We completely eliminated `pygame.draw` and implemented a dedicated `MLXUtils` class. All geometry is drawn via custom software loops using `Surface.set_at((x, y), color)`:
@@ -171,7 +171,31 @@ The project was explicitly designed to comply with the constraint that *any grap
 | `Surface.get_at((x, y))` / `set_at` looping (`MLXUtils.colorize_icon`) | `mlx_get_data_addr` / memory buffer modification | Replicates pixel-level color blending and alpha manipulation without using `BLEND_RGB_ADD`. |
 | Native Python `time.perf_counter()` | `<sys/time.h>` / `gettimeofday` | Replaces `pygame.time` to ensure time-management relies on standard OS libraries, not the graphical library. |
 | Basic `blit` operations | `mlx_put_image_to_window` | Standard 2D image drawing. |
+
+
+### Back-End Features & Trade-Offs:
+* **Robust Configuration Parsing & Graceful Fallbacks:**
+  * *Constraint:* The game must not crash due to user error in the configuration file, such as missing files, bad types, or corrupted data.
+  * *Trade-off & Solution:* We implemented a highly defensive `ConfigManager`. Instead of simply crashing when `config.json` is missing, the script catches the `FileNotFoundError` and seamlessly boots using a hardcoded `_defaults` dictionary. We also bypassed standard Python JSON parsing limitations by injecting a custom `object_pairs_hook` into `json.loads()`. This intercepts duplicate JSON keys during the read phase and safely clamps them to predefined default values, preventing silent configuration overwrites.
+
+* **Decoupled State Machine Architecture:**
+  * *Implementation:* The game flow is managed by a central `Application` class acting as a finite state machine (`MENU`, `PLAYING`, `PAUSE`, `NAME_INPUT`, `HIGHSCORES`). The backend logic (`GameState`) handles all entity updates, wave timers, and score aggregation completely independently of the front-end graphics, ensuring that UI lag never impacts the underlying game math.
+
+* **Authentic Ghost AI & Time Management:**
+  * *Implementation:* The backend replicates canonical arcade AI waves (Scatter, Chase, and Flee modes). To maintain strict MLX compliance, all backend timing loops and wave transitions are driven by standard OS-level libraries (`time.perf_counter()`) rather than graphical library clock ticks.
+
+* **Deterministic vs. Procedural Maze Generation:**
+  * *Implementation:* The backend wraps the external `A-Maze-ing` package via `MazeLoader`.
+  * *Trade-off & Solution:* To satisfy the need for both predictable evaluation and replayability, the logic explicitly feeds the configuration `seed` (default: 42) into Level 1 to guarantee a deterministic layout. For all subsequent levels, the backend drops the seed and utilizes `random.randint`, ensuring infinite procedural generation while dynamically calculating valid pacgum capacities and safe entity spawn coordinates (e.g., placing Pinky precisely in the top-left corner).
+
+* **Evaluation "Cheat" Mode Isolation:**
+  * *Implementation:* To aid peers during the 42 evaluation process without compromising the integrity of the base game, we introduced a strict `game_mode` toggle in the config. Setting this to `"evaluation"` unlocks a developer pause menu that allows real-time dynamic speed scaling, invincibility toggles, and instant level skipping.
+
+* **Lightweight Persistence (JSON vs. Databases):**
+  * *Trade-off & Solution:* For the top-10 leaderboard, we traded the robustness of a relational database (like SQLite) for a lightweight `highscore.json` implementation. This removes heavy dependencies and keeps the save file human-readable. To mitigate the risk of file injection, the backend aggressively validates leaderboard reads and utilizes strict Regex sanitization on player names (clamping to 10 alphanumeric characters) before writing to the disk.
+
 ---
+
 
 ## General Software Architecture
 
@@ -196,7 +220,15 @@ The software architecture completely decouples the backend state and logic from 
 
 ## Project Management
 
-A dedicated directory containing evidence of our project management methodology (including timelines, tracking boards, risk analysis, and team organization) can be found in the [`project_mgt/`](./project_mgt/) folder.
+We utilized an Agile approach with the extensive application of GitHub features.
+
+* **Team Organization:** The project was developed by two teammates. `vokotera` developed the front-end architecture and MLX-compliant rendering systems, while `dporhomo` focused on the back-end logic, state machine, physics, entity AI and overall project management.
+* **Branching Strategy:** We worked in separate feature branches, predominantly `Front-end-dev` and `Back-end-dev`. We gradually worked in our respective branches and pushed them to Git frequently.
+* **Pull Requests & Code Review:** Stable features were merged into the `main` branch solely through Pull Requests. This allowed us to validate changes, share our work, review progress in incremental steps, and ensure backup points.
+* **Task Tracking:** We used GitHub Issues as tickets to track bugs, assign specific feature modules, and monitor progress across a 4-week lifecycle.
+* **Timeline:** We allocated exactly 4 weeks to complete the full scope of this project. Core features were completed by Day 22, reserving the final 6 days strictly for evaluation prep, bug fixing, and compliance audits.
+
+A dedicated directory containing evidence of our project management methodology (including timelines, tracking boards, risk analysis, and team organization) can be found in the [`project_mgt/`](./project_mgt/01_team_organization.md) folder.
 
 * **01_team_organization.md**: Details the front-end/back-end split between vokotera and dporhomo, and how you communicated (GitHub discussions, daily syncs).
 
@@ -207,16 +239,6 @@ A dedicated directory containing evidence of our project management methodology 
 * **04_blocking_points.md**: Details the realization that pygame.time violated MLX rules and how it was surgically removed and replaced with standard Python time.
 
 * **05_acceptance_test_plan.md**: A checklist of the edge cases you tested (Evaluation mode speeds, JSON config corruption, level scaling).
-
-
-### Overview
-We utilized an Agile approach with the extensive application of GitHub features.
-
-* **Team Organization:** The project was developed by two teammates. `vokotera` developed the front-end architecture and MLX-compliant rendering systems, while `dporhomo` focused on the back-end logic, state machine, physics, and entity AI.
-* **Branching Strategy:** We worked in separate feature branches, predominantly `Front-end-dev` and `Back-end-dev`. We gradually worked in our respective branches and pushed them to Git frequently.
-* **Pull Requests & Code Review:** Stable features were merged into the `main` branch solely through Pull Requests. This allowed us to validate changes, share our work, review progress in incremental steps, and ensure backup points.
-* **Task Tracking:** We used GitHub Issues as tickets to track bugs, assign specific feature modules, and monitor progress across a 4-week lifecycle.
-* **Timeline:** We allocated exactly 4 weeks to complete the full scope of this project. Core features were completed by Day 22, reserving the final 6 days strictly for evaluation prep, bug fixing, and compliance audits.
 
 ---
 

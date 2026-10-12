@@ -57,3 +57,6 @@ Acceptance testing should therefore include normal and high-speed movement, narr
 - **Front-end / rendering:** MLX-compliant drawing efficiency, renderer behavior, UI feedback, and audio integration.
 - **Shared:** End-to-end performance, integration regressions, and evaluation readiness.
 
+---
+**⬅ Previous:** [Timeline and Progress](./02_timeline_and_progress.md) | **Next:** [Blocking Points ➔](./04_blocking_points.md)
+
