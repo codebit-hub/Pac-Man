@@ -11,6 +11,8 @@
 
 # Pac-Man
 
+https://github.com/user-attachments/assets/50801fa4-a034-404d-b787-eeecdcfa39b3
+
 ## Description
 
 This project is a fully featured, Pygame-based clone of the classic arcade game Pac-Man. It features dynamically generated mazes, classic ghost AI wave behaviors (Scatter, Chase, and Flee), progressive difficulty scaling across multiple levels, and a persistent top-10 highscore system. The application relies on a modular architecture, completely separating backend game logic from front-end rendering.
