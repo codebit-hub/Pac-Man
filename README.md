@@ -1,3 +1,12 @@
+<div align="center">
+  <img src="https://img.shields.io/badge/Grade-100%25%2F100%25-2ecc71?style=for-the-badge&logo=check-circle&logoColor=white" alt="Grade 100%/100%" />
+  <img src="https://img.shields.io/badge/Completed-13.10.2026-f7b801?style=for-the-badge" alt="Completed 13.10.2026" />
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/Mypy%20%2F%20Flake8-passing-00b894?style=for-the-badge&logo=python&logoColor=white" alt="Mypy/Flake8" />
+  <img src="https://img.shields.io/badge/MiniLibX-Ready-8e44ad?style=for-the-badge" alt="MiniLibX" />
+  <img src="https://img.shields.io/badge/PyGame-Ready-ff6b35?style=for-the-badge&logo=pygame&logoColor=white" alt="PyGame" />
+</div>
+
 *This project has been created as part of the 42 curriculum by dporhomo, vokotera.*
 
 # Pac-Man
